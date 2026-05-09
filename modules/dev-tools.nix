@@ -28,10 +28,13 @@
     curl
     wget
 
-    # Languages & runtimes that AstroNvim's LSP/format tooling expects.
-    # mise can still layer additional versions on top via `mise use`.
+    # Languages & runtimes that AstroNvim's LSP/format tooling expects, and
+    # that other tools (npm-based CLIs, claude-code, etc.) need on PATH.
+    # mise can still layer additional versions on top per-project via
+    # `.mise.toml`, but a sane default lives here so musl-only distros
+    # like Alpine don't need to compile node from source.
     python3
-    nodejs_22
+    nodejs_24
 
     # Lua dev for AstroNvim itself.
     lua-language-server

@@ -40,8 +40,10 @@ Faithful preservation:
 - The full AstroNvim config, including `lua/plugins/custom.lua` (leap.nvim,
   claudecode.nvim, the 6 colorschemes, the heirline statusline override, the
   tailwind+cva LSP regex tweaks).
-- mise still owns the `~/.config/mise/config.toml` semantics (node 24.4.1
-  pinned globally; project `.mise.toml` files keep working as before).
+- mise still owns `~/.config/mise/config.toml`. Project `.mise.toml` files
+  keep working as before. Note: the base Node now comes from Nix
+  (`nodejs_24` in `dev-tools.nix`) instead of a mise-managed global pin —
+  see *Why no global Node pin in mise* below.
 
 Improvements:
 
@@ -274,6 +276,35 @@ nix run home-manager/master -- switch --impure --flake ".#default" -b backup
 
 `flake.lock` lives inside the repo and pins nixpkgs + home-manager, so any
 two boxes that switch from the same lockfile end up with the same closure.
+
+## Why no global Node pin in mise
+
+mise downloads prebuilt Node binaries from nodejs.org that are linked
+against glibc. Alpine and other musl-based distros aren't ABI-compatible,
+so mise falls back to compiling Node from source — which needs the full
+C/C++ toolchain (`build-base`, `python3`, `linux-headers`, ...) and ~1
+hour of CPU.
+
+Instead of pinning Node in `programs.mise.globalConfig`, the base Node
+lives in `modules/dev-tools.nix` (`nodejs_24`). Nix builds the right ABI
+for whichever host you're on. Project-specific Node versions still work
+through a project `.mise.toml`:
+
+```toml
+[tools]
+node = "20.18.0"
+```
+
+If you really need mise to compile Node from source on Alpine:
+
+```sh
+sudo apk add build-base python3 linux-headers
+```
+
+…then `mise install` in the project dir.
+
+The same logic applies to any interpreter mise manages: prefer Nix for the
+system-wide default, mise for project pins.
 
 ## Common bootstrap errors
 
