@@ -11,18 +11,28 @@
 
   outputs = { self, nixpkgs, home-manager, ... }:
     let
-      # Resolve the running host's system + username at eval time so the same
+      # Resolve the running host's system + identity at eval time so the same
       # flake works for any user on either Linux or macOS. Requires --impure.
-      system   = builtins.currentSystem;
-      username =
-        let envUser = builtins.getEnv "USER";
-        in if envUser == "" then "user" else envUser;
+      system  = builtins.currentSystem;
+      envUser = builtins.getEnv "USER";
+      envHome = builtins.getEnv "HOME";
+
+      username = if envUser == "" then "user" else envUser;
+
+      # Trust $HOME when set — distros sometimes diverge from /home/$USER
+      # (Lima/Alpine creates /home/<user>.linux, macOS uses /Users/<user>).
+      isDarwin = system == "aarch64-darwin" || system == "x86_64-darwin";
+      homeDirectory =
+        if envHome != "" then envHome
+        else if username == "root" then "/root"
+        else if isDarwin then "/Users/${username}"
+        else "/home/${username}";
     in {
       homeConfigurations.default =
         home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.${system};
           modules = [ ./home.nix ];
-          extraSpecialArgs = { inherit system username; };
+          extraSpecialArgs = { inherit system username homeDirectory; };
         };
     };
 }

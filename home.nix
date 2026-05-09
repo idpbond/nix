@@ -1,11 +1,5 @@
-{ config, pkgs, lib, system, username, ... }:
+{ config, pkgs, lib, system, username, homeDirectory, ... }:
 
-let
-  homeDirectory =
-    if username == "root"   then "/root"
-    else if pkgs.stdenv.isDarwin then "/Users/${username}"
-    else "/home/${username}";
-in
 {
   imports = [
     ./modules/dev-tools.nix
