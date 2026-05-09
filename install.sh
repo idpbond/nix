@@ -89,6 +89,9 @@ install_nix() {
   init_args=""
   if [ "$os" != "macos" ] && ! has_systemd; then
     log "no systemd detected; installing Nix with --init none"
+    log "(the installer's post-install SelfTest will fail because no daemon"
+    log " is running yet — that's expected; we chown /nix to your user next"
+    log " and use Nix in single-user mode from there.)"
     init_args="linux --init none"
   else
     log "installing Nix (Determinate, default planner)"
@@ -143,6 +146,20 @@ run_hm_switch() {
   fi
 }
 
+# Run nvim once headlessly so lazy.nvim downloads + compiles every plugin
+# before the user's first interactive launch. AstroNvim's lua tree is already
+# in place; this populates ~/.local/share/nvim/lazy/ at install time instead
+# of at first-open time.
+warm_neovim() {
+  if ! command -v nvim >/dev/null 2>&1; then
+    warn "nvim not on PATH yet; open a new shell and run: nvim --headless '+Lazy! sync' +qa"
+    return
+  fi
+  log "warming nvim plugin cache (headless Lazy sync; takes ~30-60s)"
+  nvim --headless '+Lazy! sync' '+qa' >/dev/null 2>&1 || \
+    warn "headless Lazy sync exited non-zero; you may need to run :Lazy sync inside nvim"
+}
+
 # ---------- main -------------------------------------------------------------
 
 os=$(detect_os)
@@ -153,6 +170,7 @@ install_nix "$os"
 fix_nix_perms "$os"
 create_secrets_template
 run_hm_switch
+warm_neovim
 
 printf '\n\033[1;32mDone.\033[0m\n\n'
 cat <<EOF

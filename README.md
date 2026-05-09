@@ -190,7 +190,14 @@ in `/etc/shells`, or list `~/.nix-profile/bin/zsh` in `/etc/shells` by hand.
 
 ### 6. First-launch nvim
 
-Open `nvim` once. AstroNvim will bootstrap lazy.nvim and pull plugins. The
+If you ran `install.sh` it already pre-warmed the plugin cache headlessly,
+so opening `nvim` lands you straight in a ready editor. If you skipped that
+or did the manual flow, run it once yourself:
+
+```sh
+nvim --headless '+Lazy! sync' +qa
+```
+
 LSPs, formatters, and treesitter parsers are already on PATH and in
 `&runtimepath`, so Mason and TSInstall both stay idle.
 
@@ -276,3 +283,5 @@ two boxes that switch from the same lockfile end up with the same closure.
 | `does not provide attribute '...homeConfigurations.default.activationPackage'` | `--impure` placed before `home-manager/master` instead of after `switch` | Move the flag: `nix run home-manager/master -- switch --impure --flake ".#default"` |
 | Existing files would be clobbered | Hand-edited dotfiles in the way | Add `-b backup` (HM appends `.backup`) or move them aside manually |
 | `tmux source-file: file not found` | First-time-build sha256 mismatch on an inline tmux plugin | Paste the real hash that Nix printed back into `modules/tmux.nix` |
+| Determinate installer prints `WARN SelfTest([ShellFailed { ... daemon-socket/socket: No such file or directory })` | `--init none` mode doesn't start a daemon; the installer's self-test can't reach it | Benign. We chown `/nix` to your user immediately after, so single-user-style operation works regardless. |
+| `Error during parser installation: EACCES ... site/parser/<lang>.so` | nvim-treesitter tried to write into the read-only Nix-managed parser dir for a missing language | Add `<lang>` to `parserLanguages` in `modules/neovim.nix` and `home-manager switch`. `auto_install` is already off so this only happens for languages we haven't pre-staged. |
