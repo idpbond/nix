@@ -72,7 +72,7 @@ Improvements:
 ### TL;DR — one command
 
 ```sh
-git clone <this-repo> nix-dotfiles && cd nix-dotfiles
+git clone https://github.com/idpbond/nix.git nix-dotfiles && cd nix-dotfiles
 ./install.sh
 ```
 
