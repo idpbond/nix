@@ -33,10 +33,9 @@
 
   programs.home-manager.enable = true;
 
-  # Manage Nix itself via HM so flakes are always on, even if the user installed
-  # Nix in single-user mode without a system-level nix.conf.
-  nix = {
-    package = pkgs.nix;
-    settings.experimental-features = [ "nix-command" "flakes" ];
-  };
+  # Note: we deliberately don't install or configure Nix via Home Manager.
+  # The system installer (Determinate) already provides Nix and turns flakes
+  # on in /etc/nix/nix.conf, so adding a user-profile copy of upstream Nix
+  # only emits spurious `unknown setting 'eval-cores' / 'lazy-trees'`
+  # warnings (those are Determinate extensions vanilla Nix doesn't know).
 }
