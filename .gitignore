@@ -1,0 +1,20 @@
+# Nix build artifacts
+result
+result-*
+
+# direnv cache (allowed via programs.direnv but per-checkout state)
+.direnv/
+
+# Editor & OS junk
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Anything that might leak secrets
+secrets.zsh
+.env
+.env.local
+*.pem
+*.key
+.git-credentials
