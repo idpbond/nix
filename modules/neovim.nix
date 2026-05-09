@@ -13,6 +13,8 @@ let
   parserLanguages = [
     # AstroNvim core
     "lua" "luadoc" "vim" "vimdoc" "query" "regex"
+    # C/C++ are foundational — many other parsers depend on them.
+    "c" "cpp"
     # Configs / docs
     "bash" "zsh" "tmux"
     "json" "json5" "yaml" "toml" "markdown" "markdown_inline" "diff"
