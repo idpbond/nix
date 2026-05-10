@@ -28,6 +28,12 @@
     curl
     wget
 
+    # Real bash. Some scripts (e.g. tmux-fzf) start with `#!/usr/bin/env bash`
+    # and use bash-specific syntax like ${BASH_SOURCE[0]}. On Alpine /bin/bash
+    # is BusyBox ash, which fails on those substitutions. Nix-installed bash
+    # makes ~/.nix-profile/bin/bash the first match on PATH everywhere.
+    bashInteractive
+
     # Languages & runtimes that AstroNvim's LSP/format tooling expects, and
     # that other tools (npm-based CLIs, claude-code, etc.) need on PATH.
     # mise can still layer additional versions on top per-project via
