@@ -3,11 +3,29 @@
 {
   programs.yazi = {
     enable = true;
-    enableZshIntegration = true;
-    # Provides `yy` wrapper that exits to the directory yazi was last in.
-    # `Y` is occasionally used by other tools; keeping `yy` stops collisions.
+    # HM's auto-generated wrapper uses `mktemp -t TEMPLATE`, which is GNU
+    # coreutils syntax. Alpine's BusyBox mktemp parses -t as "use TMPDIR"
+    # and treats TEMPLATE as a separate (missing) argument, producing an
+    # empty path and an error. We disable HM's integration and define our
+    # own portable wrapper below.
+    enableZshIntegration = false;
     shellWrapperName = "yy";
   };
+
+  # Portable `yy` wrapper: uses `mktemp PATH-TEMPLATE` instead of `-t`, which
+  # works identically on GNU coreutils and BusyBox.
+  programs.zsh.initContent = lib.mkAfter ''
+    function yy() {
+      local tmp
+      tmp="$(mktemp "''${TMPDIR:-/tmp}/yazi-cwd.XXXXXX")" || return
+      command yazi "$@" --cwd-file="$tmp"
+      local cwd
+      if cwd="$(<"$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+        builtin cd -- "$cwd"
+      fi
+      rm -f -- "$tmp"
+    }
+  '';
 
   # Yazi's config files are large and largely hand-tuned (theme.toml is ~770
   # lines of icon definitions). It's much cleaner to drop the .toml/.lua files
