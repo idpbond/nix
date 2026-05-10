@@ -282,6 +282,47 @@ nix run home-manager/master -- switch --impure --flake ".#default" -b backup
 `flake.lock` lives inside the repo and pins nixpkgs + home-manager, so any
 two boxes that switch from the same lockfile end up with the same closure.
 
+## Installing Claude Code on Alpine
+
+Three options, in order of how-much-pain:
+
+1. **Anthropic's signed apk repo (recommended):**
+
+   ```sh
+   sudo wget -O /etc/apk/keys/claude-code.rsa.pub \
+     https://downloads.claude.ai/keys/claude-code.rsa.pub
+   echo "https://downloads.claude.ai/claude-code/apk/stable" \
+     | sudo tee -a /etc/apk/repositories
+   sudo apk update && sudo apk add claude-code ripgrep
+
+   mkdir -p ~/.claude && cat > ~/.claude/settings.json <<'JSON'
+   { "env": { "USE_BUILTIN_RIPGREP": "0" } }
+   JSON
+   ```
+
+   Native musl build, signed, auto-updates with `apk upgrade`.
+
+2. **npm via Nix's musl-native node:**
+
+   ```sh
+   mkdir -p ~/.npm-global
+   npm config set prefix ~/.npm-global
+   npm install -g @anthropic-ai/claude-code
+   export PATH=~/.npm-global/bin:$PATH
+   ```
+
+   Pulls the `linux-arm64-musl` artifact through npm's optional-dependency
+   mechanism. Works today on Alpine because `nodejs_24` from Nix is musl.
+
+3. **mise (currently broken on this flake's pinned mise):** the
+   `aqua:anthropics/claude-code` route downloads the glibc binary and crashes
+   on musl. Fixed upstream in mise ≥ 2026.4.23 (env: `MISE_LIBC=musl`) and
+   fully resolved in 2026.5.2 (registry libc-variant overrides), but the Nix
+   package is currently pinned at 2026.4.20. The flake already exports
+   `MISE_LIBC=musl` automatically on musl hosts (see `modules/zsh.nix`), so
+   the moment nixpkgs ships a fixed mise, `nix flake update && switch` makes
+   `mise install claude` Just Work.
+
 ## Why no global Node pin in mise
 
 mise downloads prebuilt Node binaries from nodejs.org that are linked
