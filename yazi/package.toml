@@ -1,0 +1,19 @@
+[[plugin.deps]]
+use = "yazi-rs/plugins:git"
+rev = "b224ddf"
+hash = "270915fa8282a19908449530ff66f7e2"
+
+[[plugin.deps]]
+use = "Lil-Dank/lazygit"
+rev = "0e56060"
+hash = "ab2e66065a94cca4886b303518e44bd8"
+
+[[flavor.deps]]
+use = "matt-dong-123/gruvbox-material"
+rev = "6c36491"
+hash = "564f2335540ee2c440c3b671bc28ac60"
+
+[[flavor.deps]]
+use = "gosxrgxx/flexoki-dark"
+rev = "28e1977"
+hash = "bc4620db89cf55bd91906c239f8fa1a8"

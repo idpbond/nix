@@ -8,6 +8,7 @@
     ./modules/tmux.nix
     ./modules/neovim.nix
     ./modules/mise.nix
+    ./modules/yazi.nix
   ];
 
   home.username = username;

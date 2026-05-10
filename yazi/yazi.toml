@@ -1,0 +1,30 @@
+[mgr]
+show_hidden = true
+
+[opener]
+# Smart-open: binaries reveal in the OS file manager, text files open in nvim
+# (preferring a tmux split when inside tmux). One entry per platform; yazi's
+# `for = "..."` field selects the right one at runtime.
+smart_open = [
+	{ run = 'if file --mime-encoding %s1 | grep -q binary; then open -R %s1; elif [ -n "$TMUX" ]; then tmux new-window -- nvim %s; else nvim %s; fi', desc = "Smart open", block = true, for = "macos" },
+	{ run = 'if file --mime-encoding %s1 | grep -q binary; then xdg-open %s1; elif [ -n "$TMUX" ]; then tmux new-window -- nvim %s; else nvim %s; fi', desc = "Smart open", block = true, for = "linux" },
+]
+finder = [
+	{ run = 'open -R %s1', desc = "Reveal in Finder", for = "macos" },
+	{ run = 'xdg-open "$(dirname %s1)"', desc = "Open containing folder", for = "linux" },
+]
+
+[open]
+prepend_rules = [
+	{ url = "*", use = [ "smart_open", "finder" ] },
+]
+
+[[plugin.prepend_fetchers]]
+id = "git"
+url = "*"
+run = "git"
+
+[[plugin.prepend_fetchers]]
+id = "git"
+url = "*/"
+run = "git"

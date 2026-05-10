@@ -32,11 +32,19 @@ modules/
   neovim.nix           # nvim binary, runtime PATH, AstroNvim config symlinks,
                        # Nix-built treesitter parsers staged into &runtimepath
   mise.nix             # programs.mise + globalConfig (node 24.4.1)
+  yazi.nix             # programs.yazi + plugins/flavors vendored under yazi/
   git.nix              # user.name/user.email + sane defaults
   dev-tools.nix        # rg/fd/bat/eza/lazygit/gh/gcc/python/lsp/... + direnv
 nvim/                  # AstroNvim user config; init.lua + lua/...
                        # custom.lua is preserved verbatim from the live system.
+yazi/                  # yazi config + vendored plugins (fg/git/lazygit) and
+                       # flavors (gruvbox-material, flexoki-dark). Cross-
+                       # platform opener: macOS + Linux variants.
 ```
+
+If you want the catppuccin-mocha syntax-highlighting theme yazi's `theme.toml`
+references at `~/.config/yazi/Catppuccin-mocha.tmTheme`, drop the `.tmTheme`
+file there yourself — yazi falls back to defaults if it's missing.
 
 The Nix store handles every binary. AstroNvim still owns its own plugin tree
 via `lazy.nvim` — that one path stays mutable on purpose so updates don't
