@@ -5,6 +5,21 @@ and mise — driven by a single Home Manager flake. Targets Linux and macOS
 from the same `home.nix`. Username and system arch are resolved at eval
 time, so the same flake works for any user on any host.
 
+## Bootstrap (one command)
+
+```sh
+git clone https://github.com/idpbond/nix.git nix-dotfiles && cd nix-dotfiles
+./install.sh
+```
+
+`install.sh` detects Alpine / Debian / Ubuntu / Fedora / Arch / macOS,
+installs the right prerequisites, runs the Determinate Nix installer with
+the right flags (auto-detects systemd vs. `--init none`), reclaims `/nix`
+ownership when needed, drops a secrets-file template at
+`~/.config/zsh/secrets.zsh`, and runs `home-manager switch`. Idempotent —
+safe to re-run. If you'd rather drive it by hand or your distro isn't
+recognised, see [Manual bootstrap](#manual-bootstrap) below.
+
 ## What's in here
 
 ```
@@ -69,24 +84,9 @@ Improvements:
   `aarch64-darwin`, `x86_64-darwin` all build from the same `home.nix`, and
   `$USER` is read at eval time so the same command works for any user.
 
-## First-time bootstrap
+## Manual bootstrap
 
-### TL;DR — one command
-
-```sh
-git clone https://github.com/idpbond/nix.git nix-dotfiles && cd nix-dotfiles
-./install.sh
-```
-
-`install.sh` detects Alpine / Debian / Ubuntu / Fedora / Arch / macOS,
-installs the right prerequisites, runs the Determinate Nix installer with
-the right flags (auto-detects systemd vs. `--init none`), reclaims `/nix`
-ownership when needed, drops a secrets-file template at
-`~/.config/zsh/secrets.zsh`, and runs `home-manager switch`. Idempotent —
-safe to re-run.
-
-If you'd rather do it manually (or your distro isn't recognised), follow
-the steps below.
+If `install.sh` doesn't fit your situation, the same setup in steps:
 
 ### 1. Install Nix
 
