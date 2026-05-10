@@ -102,10 +102,15 @@ in daemon-less mode. Alpine's minimal image lacks `curl`, `sudo`, and a few
 others, so install those first:
 
 ```sh
-sudo apk add curl sudo xz git shadow zsh
+sudo apk add curl sudo xz git shadow zsh gcompat
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | \
   sh -s -- install linux --init none
 ```
+
+(`gcompat` is the glibc-shim layer that lets vendor-built binaries like
+`claude-code`'s official release run on musl — Nix can't help with this
+because the ELF interpreter path is baked into the binary at compile time
+and points at `/lib64/`.)
 
 `--init none` still installs `/nix` root-owned, which prevents non-root
 `nix` invocations. Reclaim it for your user before continuing:
@@ -316,3 +321,4 @@ system-wide default, mise for project pins.
 | `tmux source-file: file not found` | First-time-build sha256 mismatch on an inline tmux plugin | Paste the real hash that Nix printed back into `modules/tmux.nix` |
 | Determinate installer prints `WARN SelfTest([ShellFailed { ... daemon-socket/socket: No such file or directory })` | `--init none` mode doesn't start a daemon; the installer's self-test can't reach it | Benign. We chown `/nix` to your user immediately after, so single-user-style operation works regardless. |
 | `Error during parser installation: EACCES ... site/parser/<lang>.so` | nvim-treesitter tried to write into the read-only Nix-managed parser dir for a missing language | Add `<lang>` to `parserLanguages` in `modules/neovim.nix` and `home-manager switch`. `auto_install` is already off so this only happens for languages we haven't pre-staged. |
+| `zsh: no such file or directory: /path/to/some-vendor-binary` (file exists, is executable) | Alpine: glibc-linked binary on musl can't find its ELF interpreter | `sudo apk add gcompat` (already in `install.sh`'s Alpine prereqs for fresh installs). |

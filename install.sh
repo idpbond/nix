@@ -40,7 +40,10 @@ install_prereqs() {
   case "$os" in
     alpine)
       log "installing Alpine prerequisites (apk)"
-      sudo apk add --no-progress curl sudo xz git shadow zsh
+      # gcompat provides /lib64/ld-linux-* so glibc-linked vendor binaries
+      # (claude-code, some gh builds, etc.) can run on musl. file is purely
+      # for future debugging.
+      sudo apk add --no-progress curl sudo xz git shadow zsh gcompat file
       ;;
     debian|ubuntu)
       log "installing Debian/Ubuntu prerequisites (apt)"
