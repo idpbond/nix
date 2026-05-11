@@ -27,6 +27,7 @@
       navigate = true;       # n / N jumps between diff sections
       line-numbers = true;
       side-by-side = false;  # flip to true for split view
+      paging = "always";     # always open the pager, even for short diffs
     };
   };
 }
