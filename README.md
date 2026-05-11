@@ -33,7 +33,8 @@ modules/
                        # Nix-built treesitter parsers staged into &runtimepath
   mise.nix             # programs.mise + globalConfig (node 24.4.1)
   yazi.nix             # programs.yazi + plugins/flavors vendored under yazi/
-  git.nix              # user.name/user.email + sane defaults
+  git.nix              # user.name/user.email + sane defaults + delta pager
+  fonts.nix            # IosevkaTerm Nerd Font (only loaded when withGui=true)
   dev-tools.nix        # rg/fd/bat/eza/lazygit/gh/gcc/python/lsp/... + direnv
 nvim/                  # AstroNvim user config; init.lua + lua/...
                        # custom.lua is preserved verbatim from the live system.
@@ -359,6 +360,30 @@ sudo apk add build-base python3 linux-headers
 
 The same logic applies to any interpreter mise manages: prefer Nix for the
 system-wide default, mise for project pins.
+
+## GUI assets (fonts, etc.)
+
+GUI-only packages (currently just `nerd-fonts.iosevka-term`) sit behind a
+`withGui` flag in `flake.nix`. Default behavior:
+
+- **macOS** (`*-darwin`) — on, since Darwin is always GUI in practice.
+- **Linux** — off, since the same flake runs on headless VMs / containers
+  where TTF files are dead weight. Opt in per-invocation:
+
+  ```sh
+  WITH_GUI=1 home-manager switch --impure --flake ".#default"
+  ```
+
+  Or force off on a darwin server:
+
+  ```sh
+  WITH_GUI=0 home-manager switch --impure --flake ".#default"
+  ```
+
+Once activated, the font lives at
+`~/.nix-profile/share/fonts/truetype/NerdFonts/IosevkaTerm/` and fontconfig
+picks it up automatically on Linux. Set your terminal/IDE to use
+`IosevkaTerm Nerd Font` after the next `exec zsh`.
 
 ## Common bootstrap errors
 
