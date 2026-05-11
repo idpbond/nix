@@ -27,12 +27,20 @@
         else if username == "root" then "/root"
         else if isDarwin then "/Users/${username}"
         else "/home/${username}";
+
+      # Auto-on for macOS, opt-in via WITH_GUI=1 for Linux. Toggles the
+      # fonts module (and anything else GUI-only we add later). Set
+      # WITH_GUI=0 to skip on macOS if you ever want a headless darwin.
+      withGuiEnv = builtins.getEnv "WITH_GUI";
+      withGui =
+        if withGuiEnv != "" then withGuiEnv != "0" && withGuiEnv != "false"
+        else isDarwin;
     in {
       homeConfigurations.default =
         home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.${system};
           modules = [ ./home.nix ];
-          extraSpecialArgs = { inherit system username homeDirectory; };
+          extraSpecialArgs = { inherit system username homeDirectory withGui; };
         };
     };
 }

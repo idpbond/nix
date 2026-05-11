@@ -1,4 +1,4 @@
-{ config, pkgs, lib, system, username, homeDirectory, ... }:
+{ config, pkgs, lib, system, username, homeDirectory, withGui, ... }:
 
 {
   imports = [
@@ -9,6 +9,8 @@
     ./modules/neovim.nix
     ./modules/mise.nix
     ./modules/yazi.nix
+  ] ++ lib.optionals withGui [
+    ./modules/fonts.nix
   ];
 
   home.username = username;
