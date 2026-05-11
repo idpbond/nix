@@ -34,6 +34,12 @@
     # makes ~/.nix-profile/bin/bash the first match on PATH everywhere.
     bashInteractive
 
+    # Real GNU less. Tools like delta invoke their pager with long-form
+    # options (--RAW-CONTROL-CHARS, --quit-if-one-screen, --mouse, ...)
+    # which BusyBox less rejects outright. Nix's less takes precedence on
+    # PATH so delta / git / man / etc. get the option set they expect.
+    less
+
     # Languages & runtimes that AstroNvim's LSP/format tooling expects, and
     # that other tools (npm-based CLIs, claude-code, etc.) need on PATH.
     # mise can still layer additional versions on top per-project via
