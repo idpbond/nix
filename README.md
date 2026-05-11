@@ -385,6 +385,24 @@ Once activated, the font lives at
 picks it up automatically on Linux. Set your terminal/IDE to use
 `IosevkaTerm Nerd Font` after the next `exec zsh`.
 
+## Uninstall
+
+Symmetric to `install.sh`. Removes the Home Manager profile, the Nix
+store, the `nixbld` group, daemon (if any), and HM's per-user state.
+Distro packages we installed (`curl`, `zsh`, `gcompat`, …) are left
+alone unless you pass `--purge-pkgs`:
+
+```sh
+./uninstall.sh                # interactive — asks at each destructive step
+./uninstall.sh --yes          # non-interactive
+./uninstall.sh --hm-only      # only undo the user profile; leave Nix
+./uninstall.sh --purge-pkgs   # also apk/apt-remove the bootstrap prereqs
+```
+
+After the script finishes, the repo directory itself can be `rm -rf`'d
+and your secrets file at `~/.config/zsh/secrets.zsh` is offered for
+deletion separately so you don't lose tokens by accident.
+
 ## Common bootstrap errors
 
 | Symptom | Cause | Fix |
