@@ -10,6 +10,7 @@
     ./modules/mise.nix
     ./modules/yazi.nix
     ./modules/yubikey.nix
+    ./modules/alacritty.nix
   ] ++ lib.optionals withGui [
     ./modules/fonts.nix
   ];
