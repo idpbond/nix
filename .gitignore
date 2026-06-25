@@ -13,6 +13,7 @@ Thumbs.db
 
 # Anything that might leak secrets
 secrets.zsh
+secrets.fish
 .env
 .env.local
 *.pem

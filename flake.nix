@@ -35,12 +35,19 @@
       withGui =
         if withGuiEnv != "" then withGuiEnv != "0" && withGuiEnv != "false"
         else isDarwin;
+
+      # Opt-in fish A/B environment. zsh + oh-my-zsh stays the default (and login
+      # shell); WITH_FISH=1 additionally installs modules/fish.nix (fish + starship
+      # + ported git abbrs) ALONGSIDE zsh, touching nothing in the zsh setup. Unset
+      # (the default) leaves the environment exactly as it is today.
+      withFishEnv = builtins.getEnv "WITH_FISH";
+      withFish = withFishEnv != "" && withFishEnv != "0" && withFishEnv != "false";
     in {
       homeConfigurations.default =
         home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.${system};
           modules = [ ./home.nix ];
-          extraSpecialArgs = { inherit system username homeDirectory withGui; };
+          extraSpecialArgs = { inherit system username homeDirectory withGui withFish; };
         };
     };
 }

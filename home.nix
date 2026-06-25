@@ -1,4 +1,4 @@
-{ config, pkgs, lib, system, username, homeDirectory, withGui, ... }:
+{ config, pkgs, lib, system, username, homeDirectory, withGui, withFish, ... }:
 
 {
   imports = [
@@ -13,6 +13,13 @@
     ./modules/alacritty.nix
   ] ++ lib.optionals withGui [
     ./modules/fonts.nix
+  ] ++ lib.optionals withFish [
+    # Opt-in modern-stack trial: WITH_FISH=1. Adds fish + starship + zellij
+    # ALONGSIDE the defaults (zsh/omz + tmux), which stay untouched and remain
+    # the login shell / default multiplexer. Drop the flag (or roll back the
+    # generation) to remove all three — the defaults are unaffected either way.
+    ./modules/fish.nix
+    ./modules/zellij.nix
   ];
 
   home.username = username;
