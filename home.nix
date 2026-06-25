@@ -11,6 +11,8 @@
     ./modules/yazi.nix
     ./modules/yubikey.nix
     ./modules/alacritty.nix
+    ./modules/fish.nix
+    ./modules/zellij.nix
   ] ++ lib.optionals withGui [
     ./modules/fonts.nix
   ] ++ lib.optionals withFish [

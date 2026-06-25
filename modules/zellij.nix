@@ -13,11 +13,30 @@
   home.packages = [ pkgs.zellij ];
 
   xdg.configFile."zellij/config.kdl".text = ''
-    theme "tokyo-night-light"
+    theme "flexoki-dark"
     pane_frames false
     scrollback_editor "nvim"
     default_shell "${pkgs.fish}/bin/fish"
     copy_on_select true
+
+    // Flexoki Dark (kepano's "inky" scheme), defined inline (no plugin) so it
+    // works regardless of whether this zellij build bundles it — and the dark
+    // background fixes the pane-highlight contrast on a black terminal.
+    themes {
+        flexoki-dark {
+            fg "#CECDC3"
+            bg "#100F0F"
+            black "#100F0F"
+            red "#AF3029"
+            green "#879A39"
+            yellow "#D0A215"
+            blue "#4385BE"
+            magenta "#CE5D97"
+            cyan "#3AA99F"
+            white "#CECDC3"
+            orange "#DA702C"
+        }
+    }
 
     // Keep pane/tab focus navigation working even in LOCKED mode (Ctrl+g).
     // Merged on top of zellij's built-in defaults, so locked mode keeps Ctrl+g
