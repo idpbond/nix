@@ -30,9 +30,15 @@
     COLORTERM = "24bit";
   };
 
-  # ~/.local/bin is on PATH by default in HM, but make sure $HOME/bin (referenced
-  # from tmux.conf for the battery script) and snap stay reachable on Linux.
-  home.sessionPath = [ "$HOME/bin" ]
+  # Home Manager only puts $HOME/bin and ~/.nix-profile/bin on PATH (via
+  # hm-session-vars.sh) — it does NOT add ~/.local/bin. Add it explicitly so
+  # tools that install there land on PATH on every host: Anthropic's native
+  # `claude` installer (~/.local/bin/claude), pipx, cargo-binstall, etc.
+  # $HOME/bin is referenced by tmux.conf's battery script; /snap/bin keeps
+  # snaps reachable on Linux. hm-session-vars.sh is sourced from ~/.zshenv, so
+  # this works in login, interactive, and non-interactive shells without
+  # touching the read-only HM-managed ~/.zshrc.
+  home.sessionPath = [ "$HOME/.local/bin" "$HOME/bin" ]
     ++ lib.optionals pkgs.stdenv.isLinux [ "/snap/bin" ];
 
   programs.home-manager.enable = true;
