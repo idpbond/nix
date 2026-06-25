@@ -24,8 +24,17 @@
         "docker"
         "docker-compose"
         "colored-man-pages"
-        "mise"
+        # "mise" intentionally omitted: the OMZ mise plugin just runs
+        # `eval "$(mise activate zsh)"`, which programs.mise.enableZshIntegration
+        # already does — including it double-activated mise (~20ms/shell wasted).
       ];
+
+      # Source the user's tracked custom *.zsh files (e.g. git-resign) the same
+      # way the old ~/.oh-my-zsh/custom/ did. HM's oh-my-zsh uses its own $ZSH
+      # in the Nix store, so the old ~/.oh-my-zsh/custom/ is no longer read —
+      # these live in the repo now. ZSH_CUSTOM points here; OMZ sources
+      # $ZSH_CUSTOM/*.zsh at startup.
+      custom = "${../zsh/custom}";
     };
 
     # Anything that used to live at the bottom of the hand-written .zshrc
