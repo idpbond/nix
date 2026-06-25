@@ -9,6 +9,7 @@
     ./modules/neovim.nix
     ./modules/mise.nix
     ./modules/yazi.nix
+    ./modules/yubikey.nix
   ] ++ lib.optionals withGui [
     ./modules/fonts.nix
   ];
