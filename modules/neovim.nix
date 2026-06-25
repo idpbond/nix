@@ -33,6 +33,22 @@ let
   '' + lib.concatMapStringsSep "\n" (lang: ''
     ln -s ${pkgs.vimPlugins.nvim-treesitter.builtGrammars.${lang}}/parser $out/parser/${lang}.so
   '') parserLanguages);
+
+  # Curated highlight/indent/fold/injection queries for those same parsers.
+  # nvim-treesitter's `main` branch (which AstroNvim v6 tracks) ships queries
+  # under runtime/queries/ and only copies them next to a parser when you run
+  # `:TSInstall`. Because we supply parsers out-of-band from the Nix store and
+  # never `:TSInstall`, the queries never reach the runtimepath and treesitter
+  # highlighting silently no-ops — parsers load, but
+  # `vim.treesitter.query.get(lang, "highlights")` returns nil. Stage them from
+  # the *same* nixpkgs nvim-treesitter the grammars come from, so grammar and
+  # query versions always match, under site/queries/ (on the default rtp) as
+  # `queries/<lang>/*.scm`.
+  treesitter-queries = pkgs.runCommand "nvim-treesitter-queries" { } (''
+    mkdir -p $out/queries
+  '' + lib.concatMapStringsSep "\n" (lang: ''
+    ln -s ${pkgs.vimPlugins.nvim-treesitter}/runtime/queries/${lang} $out/queries/${lang}
+  '') parserLanguages);
 in
 {
   programs.neovim = {
@@ -92,5 +108,10 @@ in
   # Drop the prebuilt parser .so files where neovim's runtimepath looks for
   # them. nvim-treesitter detects them and won't redownload.
   xdg.dataFile."nvim/site/parser".source = "${treesitter-parsers}/parser";
+
+  # And the matching queries (see treesitter-queries above) so highlighting,
+  # indentation and folds actually activate under AstroNvim v6's main-branch
+  # nvim-treesitter.
+  xdg.dataFile."nvim/site/queries".source = "${treesitter-queries}/queries";
 }
 

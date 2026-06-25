@@ -153,14 +153,33 @@ run_hm_switch() {
 # before the user's first interactive launch. AstroNvim's lua tree is already
 # in place; this populates ~/.local/share/nvim/lazy/ at install time instead
 # of at first-open time.
+#
+# We pin to the committed nvim/lazy-lock.json via `Lazy! restore` rather than
+# chasing latest with `Lazy! sync`. `sync` would silently drag the whole plugin
+# tree forward on every bootstrap, which is how a major AstroNvim bump (and an
+# incompatible mason-lspconfig) slipped in unvetted. `restore` reproduces the
+# exact, tested versions on every host. To intentionally move forward, run
+# `:Lazy update` interactively and re-commit nvim/lazy-lock.json.
 warm_neovim() {
   if ! command -v nvim >/dev/null 2>&1; then
-    warn "nvim not on PATH yet; open a new shell and run: nvim --headless '+Lazy! sync' +qa"
+    warn "nvim not on PATH yet; open a new shell and run: nvim --headless '+Lazy! restore' +qa"
     return
   fi
-  log "warming nvim plugin cache (headless Lazy sync; takes ~30-60s)"
-  nvim --headless '+Lazy! sync' '+qa' >/dev/null 2>&1 || \
-    warn "headless Lazy sync exited non-zero; you may need to run :Lazy sync inside nvim"
+
+  # Seed the pinned lockfile into the (writable) config dir if it isn't there
+  # yet. We don't symlink it from Nix because lazy.nvim needs to write to it;
+  # we don't clobber an existing one so a host's own `:Lazy update` survives.
+  lock_src="${flake_dir}/nvim/lazy-lock.json"
+  lock_dst="$HOME/.config/nvim/lazy-lock.json"
+  if [ -f "$lock_src" ] && [ ! -f "$lock_dst" ]; then
+    log "seeding pinned lazy-lock.json"
+    mkdir -p "$(dirname "$lock_dst")"
+    cp "$lock_src" "$lock_dst"
+  fi
+
+  log "warming nvim plugin cache (headless Lazy restore; takes ~30-60s)"
+  nvim --headless '+Lazy! restore' '+qa' >/dev/null 2>&1 || \
+    warn "headless Lazy restore exited non-zero; run :Lazy restore inside nvim"
 }
 
 # ---------- main -------------------------------------------------------------
