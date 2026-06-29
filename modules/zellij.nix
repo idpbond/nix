@@ -14,10 +14,13 @@
 
   xdg.configFile."zellij/config.kdl".text = ''
     theme "flexoki-dark"
+    default_mode "locked"
     pane_frames false
     scrollback_editor "nvim"
     default_shell "${pkgs.fish}/bin/fish"
     copy_on_select true
+    show_startup_tips false
+    default_layout "compact"
 
     // Flexoki Dark (kepano's "inky" scheme), defined inline (no plugin) so it
     // works regardless of whether this zellij build bundles it — and the dark
@@ -45,10 +48,24 @@
     // keeping navigation always-available.
     keybinds {
         locked {
-            bind "Alt h" "Alt Left" { MoveFocusOrTab "Left"; }
-            bind "Alt l" "Alt Right" { MoveFocusOrTab "Right"; }
-            bind "Alt j" "Alt Down" { MoveFocus "Down"; }
-            bind "Alt k" "Alt Up" { MoveFocus "Up"; }
+            bind "Alt left" { MoveFocusOrTab "left"; }
+            bind "Alt down" { MoveFocus "down"; }
+            bind "Alt up" { MoveFocus "up"; }
+            bind "Alt right" { MoveFocusOrTab "right"; }
+            bind "Alt h" { MoveFocusOrTab "left"; }
+            bind "Alt j" { MoveFocus "down"; }
+            bind "Alt k" { MoveFocus "up"; }
+            bind "Alt l" { MoveFocusOrTab "right"; }
+        }
+
+        shared {
+            bind "Ctrl w" { 
+                LaunchOrFocusPlugin "session-manager" {
+                    floating true
+                    move_to_focused_tab true
+                };
+                // SwitchToMode "Normal"
+            }
         }
     }
   '';
