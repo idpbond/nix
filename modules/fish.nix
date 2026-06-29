@@ -64,5 +64,17 @@
     enableFishIntegration = true;
     enableZshIntegration = false;
     enableBashIntegration = false;
+    settings = {
+      add_newline = false;
+      # Single-line: drop $line_break so the character sits on the same line as context.
+      format = "$directory$git_branch$git_status $character";
+      directory.truncation_length = 3;
+      git_branch.format = "[$symbol$branch]($style) ";
+      git_status.format = "([$all_status$ahead_behind]($style) )";
+      character = {
+        success_symbol = "[❯](green)";
+        error_symbol = "[❯](red)";
+      };
+    };
   };
 }

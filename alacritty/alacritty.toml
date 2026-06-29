@@ -7,8 +7,18 @@
 [window]
 option_as_alt = "Both"
 
+[cursor]
+style = { shape = "Block", blinking = "On" }
+blink_interval = 333
+blink_timeout = 0
+
 [colors]
 draw_bold_text_with_bright_colors = true
+
+[colors.cursor]
+cursor = "#666666"
+text = "#111111"
+
 
 [[keyboard.bindings]]
 action = "CreateNewWindow"
@@ -419,12 +429,6 @@ background = "#ff76ff"
 
 [colors.search.matches]
 background = "#fefb67"
-
-[cursor]
-blink_interval = 400
-
-[cursor.style]
-blinking = "Always"
 
 [env]
 TERM = "xterm-256color"
