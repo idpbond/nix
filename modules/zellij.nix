@@ -56,6 +56,7 @@
             bind "Alt j" { MoveFocus "down"; }
             bind "Alt k" { MoveFocus "up"; }
             bind "Alt l" { MoveFocusOrTab "right"; }
+            bind "Ctrl s" { SwitchToMode "EnterSearch"; }
         }
 
         shared {
