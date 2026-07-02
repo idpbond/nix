@@ -59,13 +59,21 @@
             bind "Ctrl s" { SwitchToMode "EnterSearch"; }
         }
 
+        // Exit scroll/search back to locked so Cmd+V works immediately after yanking.
+        scroll {
+            bind "Ctrl c" "q" { SwitchToMode "Locked"; }
+        }
+
+        search {
+            bind "Ctrl c" "Esc" { SwitchToMode "Locked"; }
+        }
+
         shared {
-            bind "Ctrl w" { 
+            bind "Ctrl w" {
                 LaunchOrFocusPlugin "session-manager" {
                     floating true
                     move_to_focused_tab true
                 };
-                // SwitchToMode "Normal"
             }
         }
     }
