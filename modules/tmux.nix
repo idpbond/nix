@@ -212,6 +212,10 @@ in
 
       set -g message-style "bg=${th.bg},fg=${th.text},bold"
       set -g message-command-style "bg=${th.bg},fg=${th.text},bold"
+      # Pane borders: inactive = subtle border colour; focused pane = the active
+      # window's text colour (th.active).
+      set -g pane-border-style "fg=${th.border}"
+      set -g pane-active-border-style "fg=${th.active}"
       set -g mode-style "bg=${th.active},fg=${th.bg}"
       set -g clock-mode-colour "${th.active}"
       set -g clock-mode-style 24
