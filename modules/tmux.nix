@@ -234,7 +234,7 @@ in
       # marker on overflow (#{=/-50/…:…}). #{@lg} resolves to the CURRENT window
       # here (status is drawn in the active window's context), a live layout
       # indicator. cpu/mem/bat come from the cross-platform tmux-sysinfo helper.
-      set -g status-right "#[fg=${th.accent}] ${icons.dir}  #[fg=${th.text}]#{=/-50/${ellipsis}:#{pane_current_path}} #[fg=${th.inactive}]│ #[fg=${th.accent},bold] #{@lg} #[nobold]#[fg=${th.inactive}]│ #[fg=${th.accent}]${icons.cpu}  #[fg=${th.text}]#(${tmuxSysinfo} cpu) #[fg=${th.inactive}]│ #[fg=${th.accent}]${icons.mem}  #[fg=${th.text}]#(${tmuxSysinfo} mem) #[fg=${th.inactive}]│ #[fg=${th.accent}]${icons.bat}  #[fg=${th.text}]#(${tmuxSysinfo} bat)"
+      set -g status-right "#[fg=${th.inactive}] #{=/-50/${ellipsis}:#{pane_current_path}} #[fg=${th.inactive}]│#[fg=${th.accent},bold]#{@lg} #[nobold]#[fg=${th.inactive}]│ #[fg=${th.accent}]${icons.cpu}  #[fg=${th.text}]#(${tmuxSysinfo} cpu) #[fg=${th.inactive}]│ #[fg=${th.accent}]${icons.mem}  #[fg=${th.text}]#(${tmuxSysinfo} mem) #[fg=${th.inactive}]│ #[fg=${th.accent}]${icons.bat}  #[fg=${th.text}]#(${tmuxSysinfo} bat)"
 
       # Per-window layout glyph in @lg (the status-right section shows the
       # current window's). Recompute on every layout-changing event, and once
@@ -286,6 +286,12 @@ in
       bind -n M-J run-shell "${tmuxNavigate} down zoom"
       bind -n M-K run-shell "${tmuxNavigate} up zoom"
       bind -n M-L run-shell "${tmuxNavigate} right zoom"
+
+      # Prefix-free layout switch (mirrors prefix M-1/M-2). Steals Alt+1/Alt+2
+      # from the shell's digit-argument, which is rarely used interactively.
+      # 3/4/5 (main-horizontal/main-vertical/tiled) remain on the prefix.
+      bind -n M-1 select-layout even-horizontal
+      bind -n M-2 select-layout even-vertical
 
       bind [ copy-mode
 

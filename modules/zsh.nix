@@ -42,7 +42,8 @@
     # already wires it up declaratively.
     initContent = lib.mkAfter ''
       # Visual hint that you're inside this managed environment.
-      PROMPT="%F{cyan}[%m]%f $PROMPT"
+      # (Was the short hostname %m; pinned to "ilia" for now.)
+      PROMPT="%F{cyan}[ilia]%f $PROMPT"
 
       # On musl-based hosts (Alpine, Void, ...) tell mise to prefer musl-built
       # binaries when a registry provides both variants. Without this, mise
