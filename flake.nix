@@ -36,12 +36,31 @@
         if withGuiEnv != "" then withGuiEnv != "0" && withGuiEnv != "false"
         else isDarwin;
 
+      pkgs = nixpkgs.legacyPackages.${system};
+
     in {
       homeConfigurations.default =
         home-manager.lib.homeManagerConfiguration {
-          pkgs = nixpkgs.legacyPackages.${system};
+          inherit pkgs;
           modules = [ ./home.nix ];
           extraSpecialArgs = { inherit system username homeDirectory withGui; };
         };
+
+      # Deterministic regression tests. Run with: nix flake check --impure
+      checks.${system} = {
+        tmux-navigate =
+          pkgs.runCommand "tmux-navigate-test" { nativeBuildInputs = [ pkgs.bash pkgs.gawk ]; } ''
+            export AWK_FILE=${./modules/tmux-navigate.awk}
+            bash ${./modules/tmux-navigate.test.sh}
+            touch $out
+          '';
+
+        tmux-layout-glyph =
+          pkgs.runCommand "tmux-layout-glyph-test" { nativeBuildInputs = [ pkgs.bash pkgs.gawk ]; } ''
+            export AWK_FILE=${./modules/tmux-layout-glyph.awk}
+            bash ${./modules/tmux-layout-glyph.test.sh}
+            touch $out
+          '';
+      };
     };
 }
