@@ -107,7 +107,12 @@ in
       gopls                          # Go (Go team)
       rust-analyzer                  # Rust (rust-lang org)
       pyright                        # Python (Microsoft)
-      ruby-lsp                       # Ruby (Shopify; successor to Solargraph)
+      # Ruby: ruby-lsp lives in dev-tools.nix (plain home.packages), NOT here.
+      # extraPackages entries are *prepended* to nvim's PATH and would shadow a
+      # project-toolchain ruby-lsp. In bundler projects ruby-lsp must run under
+      # the project's own Ruby (native gems are built for it; the Nix launcher
+      # pins Nix's Ruby and exits 1 composing the bundle), so the Nix copy must
+      # stay a PATH-ordered fallback that project installs can beat.
       bash-language-server           # bash/sh only — no zsh LSP exists (treesitter covers zsh)
       elixir-ls                      # Elixir (mature standard; official "Expert" LSP still 0.1.x)
       erlang-language-platform       # Erlang `elp` (Meta/WhatsApp; supersedes unmaintained erlang_ls)

@@ -54,6 +54,13 @@
     selene
     tree-sitter
 
+    # Ruby LSP fallback for standalone files. Deliberately a plain home
+    # package (~/.nix-profile/bin — after mise and the homebrew ruby on PATH)
+    # rather than a neovim extraPackage, which would shadow project installs:
+    # in bundler projects ruby-lsp must run under the project's own Ruby, so
+    # install it into that toolchain (`gem install ruby-lsp`) and it wins.
+    ruby-lsp
+
     # Web/JS formatters & linters used from custom.lua's tailwind/cva config.
     prettier
     typescript-language-server
