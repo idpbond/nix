@@ -75,7 +75,25 @@ return {
 
       opts.servers = require("astrocore").list_insert_unique(opts.servers, servers)
 
+      -- ts_ls needs the `typescript` package itself (tsserver), resolved from
+      -- the workspace's node_modules. In projects without one it refuses to
+      -- initialize, so give it a fallback derived from whatever `tsserver` is
+      -- on PATH — Nix's typescript from extraPackages, or a mise-managed
+      -- `npm install -g typescript` if that comes first. fallbackPath is only
+      -- consulted when the workspace has no typescript, so project-pinned
+      -- versions still win. Both Nix and mise/npm use the standard npm prefix
+      -- layout (<prefix>/bin/tsserver, <prefix>/lib/node_modules/typescript).
+      local ts_fallback
+      local tsserver_bin = vim.fn.exepath "tsserver"
+      if tsserver_bin ~= "" then
+        local lib = vim.fs.normalize(
+          vim.fs.joinpath(vim.fs.dirname(tsserver_bin), "..", "lib", "node_modules", "typescript", "lib")
+        )
+        if vim.uv.fs_stat(vim.fs.joinpath(lib, "tsserver.js")) then ts_fallback = lib end
+      end
+
       opts.config = require("astrocore").extend_tbl(opts.config, {
+        ts_ls = { init_options = { tsserver = { fallbackPath = ts_fallback } } },
         -- nixpkgs elixir-ls installs `elixir-ls`; lspconfig ships no usable
         -- default cmd (upstream distributes a language_server.sh).
         elixirls = { cmd = { "elixir-ls" } },

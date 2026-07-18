@@ -97,6 +97,10 @@ in
       lua-language-server
       stylua
       typescript-language-server
+      typescript                     # tsserver itself — ts_ls falls back to this
+                                     # (via PATH) when a project has no local
+                                     # node_modules/typescript; without it the
+                                     # server hard-errors on init
       vscode-langservers-extracted   # html / cssls / jsonls / eslint
       tailwindcss-language-server
       prettier
