@@ -162,6 +162,11 @@ let
         fi ;;
     esac
   '';
+
+  # Activity jumplist (vim C-o/C-i for panes). Kept as a separate bash file
+  # (tmux-jumplist.sh) rather than inlined to avoid Nix ''-string escaping.
+  # Invoked via bash <file> so it needs no execute bit in the store.
+  tmuxJumplist = "${pkgs.bash}/bin/bash ${./tmux-jumplist.sh}";
 in
 {
   programs.tmux = {
@@ -296,6 +301,15 @@ in
       # 3/4/5 (main-horizontal/main-vertical/tiled) remain on the prefix.
       bind -n M-1 select-layout even-horizontal
       bind -n M-2 select-layout even-vertical
+
+      # Activity jumplist (vim C-o/C-i, but for panes across windows/sessions).
+      # A pane is recorded only when its buffer changed while focused (typed or
+      # rendered) — see tmux-jumplist.sh. Alt+o = back, Alt+i = forward.
+      set -g focus-events on
+      set-hook -g pane-focus-in  "run-shell \"${tmuxJumplist} snapshot #{pane_id}\""
+      set-hook -g pane-focus-out "run-shell \"${tmuxJumplist} record #{pane_id}\""
+      bind -n M-o run-shell "${tmuxJumplist} back"
+      bind -n M-i run-shell "${tmuxJumplist} fwd"
 
       bind [ copy-mode
 
