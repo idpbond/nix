@@ -54,12 +54,32 @@
     selene
     tree-sitter
 
-    # Ruby LSP fallback for standalone files. Deliberately a plain home
-    # package (~/.nix-profile/bin — after mise and the homebrew ruby on PATH)
-    # rather than a neovim extraPackage, which would shadow project installs:
-    # in bundler projects ruby-lsp must run under the project's own Ruby, so
-    # install it into that toolchain (`gem install ruby-lsp`) and it wins.
-    ruby-lsp
+    # Ruby LSP fallback for standalone (non-bundler) files. Deliberately a
+    # plain home package (~/.nix-profile/bin — after mise and the homebrew
+    # ruby on PATH) rather than a neovim extraPackage, which would shadow
+    # project installs: in bundler projects ruby-lsp must run under the
+    # project's own Ruby, so install it into that toolchain
+    # (`gem install ruby-lsp`) and it wins; lsp-servers.lua refuses to run
+    # this fallback against a Gemfile workspace. Built via ruby.withPackages
+    # so the wrappers export GEM_PATH — the bare rubyPackages.ruby-lsp shims
+    # set gem paths only in-process, and its composed-bundle step then can't
+    # see the store gems and pointlessly reinstalls them from the network
+    # into ~/.gem.
+    # GEM_HOME is pinned to a dedicated cache dir so the launcher never sees
+    # ~/.gem: stale user-dir gems (e.g. a newer ruby-lsp installed there by
+    # old composed-bundle runs) otherwise win resolution and clash with the
+    # already-activated store version ("You have already activated ruby-lsp
+    # X but your Gemfile requires Y"). The withPackages binary wrapper pins
+    # GEM_PATH to the store, making resolution fully deterministic.
+  ] ++ (
+    let
+      rubyLspEnv = pkgs.ruby.withPackages (ps: [ ps.ruby-lsp ]);
+      wrap = bin: pkgs.writeShellScriptBin bin ''
+        export GEM_HOME="''${XDG_CACHE_HOME:-$HOME/.cache}/nix-ruby-lsp-gems"
+        exec ${rubyLspEnv}/bin/${bin} "$@"
+      '';
+    in map wrap [ "ruby-lsp" "ruby-lsp-launcher" ]
+  ) ++ [
 
     # Web/JS formatters & linters used from custom.lua's tailwind/cva config.
     prettier

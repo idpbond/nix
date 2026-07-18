@@ -26,6 +26,23 @@ return {
           ["compose.yaml"] = "yaml.docker-compose",
         },
       },
+      autocmds = {
+        -- Ruby's ftplugin sets keywordprg=ri, so K in a buffer without an
+        -- attached LSP shells out to ri — on machines without a Ruby
+        -- toolchain that surfaces as "command not found: ri" in a dead
+        -- terminal split. Fall back to :help when ri doesn't exist; when it
+        -- does (machines with a real Ruby), keep genuine ri docs.
+        ruby_keywordprg_fallback = {
+          {
+            event = "FileType",
+            pattern = { "ruby", "eruby" },
+            desc = "K falls back to :help when ri is not installed",
+            callback = function(args)
+              if vim.fn.executable "ri" == 0 then vim.bo[args.buf].keywordprg = "" end
+            end,
+          },
+        },
+      },
     },
   },
   {
@@ -94,6 +111,36 @@ return {
 
       opts.config = require("astrocore").extend_tbl(opts.config, {
         ts_ls = { init_options = { tsserver = { fallbackPath = ts_fallback } } },
+
+        -- Ruby: refuse to run the Nix fallback ruby-lsp against a bundler
+        -- workspace (custom root_dir below). ruby-lsp serves projects by
+        -- composing a bundle from the project's Gemfile, which must run
+        -- under the project's own Ruby — native gems are built for it; the
+        -- Nix copy pins Nix's Ruby and dies with "quit with exit code 1".
+        -- Standalone files stay served by the fallback; bundler projects get
+        -- a one-time pointer instead of a crash notice, and a ruby-lsp
+        -- installed in the project toolchain (`gem install ruby-lsp`) wins
+        -- on PATH and attaches normally with upstream behavior.
+        ruby_lsp = {
+          root_dir = function(bufnr, on_dir)
+            local fname = vim.api.nvim_buf_get_name(bufnr)
+            local root = vim.fs.root(fname, { "Gemfile", ".git" })
+            local exe = vim.fn.exepath "ruby-lsp"
+            local nix_fallback = exe == "" or exe:find("/nix/store/", 1, true) or exe:find("/.nix-profile/", 1, true)
+            if nix_fallback and root and vim.uv.fs_stat(vim.fs.joinpath(root, "Gemfile")) then
+              vim.notify_once(
+                (
+                  "ruby_lsp: %s is a bundler project but only the Nix fallback ruby-lsp is on PATH; skipping "
+                  .. "(composed bundles need the project's own Ruby). For full support install it into the "
+                  .. "project toolchain: `gem install ruby-lsp`. Treesitter highlighting is still active."
+                ):format(root),
+                vim.log.levels.WARN
+              )
+              return
+            end
+            on_dir(root or vim.fs.dirname(fname))
+          end,
+        },
         -- nixpkgs elixir-ls installs `elixir-ls`; lspconfig ships no usable
         -- default cmd (upstream distributes a language_server.sh).
         elixirls = { cmd = { "elixir-ls" } },
