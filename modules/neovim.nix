@@ -20,9 +20,17 @@ let
     "json" "json5" "yaml" "toml" "markdown" "markdown_inline" "diff"
     "gitcommit" "gitignore" "git_config"
     # Web / TS-heavy stack from custom.lua
-    "javascript" "typescript" "tsx" "html" "css"
+    "javascript" "typescript" "tsx" "html" "css" "scss" "jsdoc"
     # Other languages we routinely touch
-    "python" "rust" "go" "nix" "dockerfile" "sql"
+    "python" "rust" "nix" "dockerfile" "sql"
+    "go" "gomod" "gosum" "gowork" "gotmpl"
+    "ruby"
+    "elixir" "heex" "eex" "erlang"
+    "swift"
+    "xml" "dtd"
+    # Infra-as-code: terraform/opentofu (hcl), helm/k8s manifests ride on yaml
+    "hcl" "terraform" "helm"
+    "prisma"
   ];
 
   # Each builtGrammars.<lang> is a derivation whose `parser` is a single .so
@@ -65,10 +73,11 @@ in
     # Runtime PATH that AstroNvim shells out to. We deliberately do NOT install
     # any nvim plugins through Nix — AstroNvim manages its own plugin tree via
     # lazy.nvim, and mixing the two leads to duplicate-load weirdness. The
-    # contract here is: Nix supplies the binary + system tools, lazy.nvim
-    # supplies the plugins, and we let Mason stay disabled (it already is in
-    # the user's mason.lua scaffold) because the LSPs/formatters live in
-    # dev-tools.nix instead.
+    # contract here is: Nix supplies the binary + system tools + LSP servers,
+    # lazy.nvim supplies the plugins, and Mason stays disabled. Servers listed
+    # here only *exist* on PATH — they attach because they're enabled in
+    # nvim/lua/plugins/lsp-servers.lua (astrolsp `servers`). Keep the two lists
+    # in sync when adding a language.
     extraPackages = with pkgs; [
       # Used by AstroNvim's default plugins and the user's custom.lua.
       gcc            # treesitter parsers compile with cc
@@ -88,9 +97,30 @@ in
       lua-language-server
       stylua
       typescript-language-server
-      vscode-langservers-extracted
+      vscode-langservers-extracted   # html / cssls / jsonls / eslint
       tailwindcss-language-server
       prettier
+
+      # Language servers — official / de-facto-standard implementations only.
+      gopls                          # Go (Go team)
+      rust-analyzer                  # Rust (rust-lang org)
+      pyright                        # Python (Microsoft)
+      ruby-lsp                       # Ruby (Shopify; successor to Solargraph)
+      bash-language-server           # bash/sh only — no zsh LSP exists (treesitter covers zsh)
+      elixir-ls                      # Elixir (mature standard; official "Expert" LSP still 0.1.x)
+      erlang-language-platform       # Erlang `elp` (Meta/WhatsApp; supersedes unmaintained erlang_ls)
+      yaml-language-server           # YAML incl. Kubernetes/CloudFormation schemas (Red Hat)
+      taplo                          # TOML
+      marksman                       # Markdown
+      lemminx                        # XML (Eclipse)
+      docker-language-server         # Dockerfile + Compose + Bake (Docker Inc., supersedes dockerls)
+      tofu-ls                        # OpenTofu/Terraform HCL (OpenTofu core team)
+      postgres-language-server       # SQL/Postgres (Supabase)
+      prisma-language-server         # Prisma schema (official)
+      # Swift: sourcekit-lsp is NOT installed via Nix on purpose — Apple ships
+      # it with the Xcode toolchain (/usr/bin/sourcekit-lsp) and the toolchain
+      # copy matches the installed SDK. lsp-servers.lua enables it only when
+      # the binary is present.
     ];
   };
 
