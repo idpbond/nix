@@ -34,6 +34,11 @@ return {
     "AstroNvim/astrocore",
     ---@type AstroCoreOpts
     opts = {
+      options = {
+        opt = {
+          wrap = true, -- AstroNvim defaults to nowrap
+        },
+      },
       mappings = {
         n = {
           ["<c-j>"] = { "<cmd>bn<cr>", desc = "Next Buffer" },
