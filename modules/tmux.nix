@@ -2,15 +2,19 @@
 
 let
   # Plugins not curated in nixpkgs are built inline via mkTmuxPlugin.
-  # First build will fail with the real sha256; paste it back here.
+  # Pin rev to an exact commit, never a branch: a branch pin with a fixed
+  # sha256 breaks with a hash mismatch on every upstream push (fresh installs
+  # fetch new content while machines with a warm store never notice). To
+  # update: pick the new commit, review the upstream diff, then paste the
+  # hash from the mismatch error of the first build.
   easy-motion = pkgs.tmuxPlugins.mkTmuxPlugin {
     pluginName = "tmux-easy-motion";
-    version = "unstable-2024-09-01";
+    version = "unstable-2026-07-16";
     src = pkgs.fetchFromGitHub {
       owner = "IngoMeyer441";
       repo = "tmux-easy-motion";
-      rev = "master";
-      sha256 = "sha256-Nxo8fWwgX79CrhUrHhfv8+mz3aUvPAbGmQkY34PQzKo=";
+      rev = "1a1aca6ed82b6b02dbfee99e0125540b6f590743";
+      sha256 = "sha256-8RRIXQc5odHSI1kVehU/tfqBw+IOcRUB5oPu7rqFTSo=";
     };
   };
 
