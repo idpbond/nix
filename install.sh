@@ -184,8 +184,11 @@ bootstrap_shared_user() {
   else
     grp=sudo
     getent group sudo >/dev/null 2>&1 || grp=wheel
-    log "creating user $u (groups: $grp)"
-    asroot useradd -m -G "$grp" -s /bin/bash "$u"
+    # zsh is guaranteed by install_prereqs, which ran before us; the HM
+    # zshrc in the user's home picks it up on first login.
+    shell=$(command -v zsh || echo /bin/bash)
+    log "creating user $u (groups: $grp, shell: $shell)"
+    asroot useradd -m -G "$grp" -s "$shell" "$u"
   fi
 
   # Private home: nothing readable by other engineers on the box.
@@ -242,10 +245,12 @@ bootstrap_shared_user() {
   log "re-running install as $u"
   # A login shell gives a clean environment so $USER/$HOME (which the flake
   # resolves via --impure) point at $u, not at the invoking user.
+  # NIX_DOTFILES_SHARED makes the child print closing instructions addressed
+  # to the person reading this terminal (the INVOKING user), not to $u.
   if command -v sudo >/dev/null 2>&1; then
-    exec sudo -iu "$u" sh -c 'cd "$HOME/nix-dotfiles" && ./install.sh'
+    exec sudo -iu "$u" sh -c 'cd "$HOME/nix-dotfiles" && NIX_DOTFILES_SHARED=1 ./install.sh'
   else
-    exec su - "$u" -c 'cd "$HOME/nix-dotfiles" && ./install.sh'
+    exec su - "$u" -c 'cd "$HOME/nix-dotfiles" && NIX_DOTFILES_SHARED=1 ./install.sh'
   fi
 }
 
@@ -333,13 +338,45 @@ if [ -n "$shared_user" ]; then
   bootstrap_shared_user "$shared_user"
 fi
 
+# Persistent marker that this account lives on a shared machine (set by the
+# --user re-exec). The zsh prompt reads it to show [user@host] instead of
+# the personal-machine [ilia].
+if [ "${NIX_DOTFILES_SHARED:-0}" = 1 ] && [ ! -f "$HOME/.config/nix-dotfiles/shared-machine" ]; then
+  log "marking this account as a shared-machine install"
+  mkdir -p "$HOME/.config/nix-dotfiles"
+  touch "$HOME/.config/nix-dotfiles/shared-machine"
+fi
+
 fix_nix_perms "$os"
 create_secrets_template
 run_hm_switch
 warm_neovim
 
 printf '\n\033[1;32mDone.\033[0m\n\n'
-cat <<EOF
+if [ "${NIX_DOTFILES_SHARED:-0}" = 1 ]; then
+  # This run happened as the dedicated user, but the person reading this is
+  # the invoking/default user — address them, with names expanded concretely
+  # so nothing accidentally applies to their own account.
+  cat <<EOF
+Everything above ran as ${USER}; your current shell is still your own user.
+
+Next steps:
+
+  1. Log in as ${USER}:
+       sudo -iu ${USER}        # or: ssh ${USER}@<this-host> if you installed an SSH key
+
+  2. If zsh isn't ${USER}'s login shell yet (freshly created accounts get it
+     automatically; pre-existing ones are left alone):
+       sudo chsh -s "\$(command -v zsh)" ${USER}
+
+  3. As ${USER}, edit ${HOME}/.config/zsh/secrets.zsh and put your tokens there.
+
+To re-apply changes later (as ${USER}):
+
+  home-manager switch --impure --flake "${flake_dir}#default"
+EOF
+else
+  cat <<EOF
 Next steps:
 
   1. Open a new shell to pick up the new PATH:
@@ -354,3 +391,4 @@ To re-apply changes later:
 
   home-manager switch --impure --flake "${flake_dir}#default"
 EOF
+fi

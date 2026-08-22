@@ -41,9 +41,16 @@
     # belongs here. The `mise activate` line is dropped because programs.mise
     # already wires it up declaratively.
     initContent = lib.mkAfter ''
-      # Visual hint that you're inside this managed environment.
-      # (Was the short hostname %m; pinned to "ilia" for now.)
-      PROMPT="%F{cyan}[ilia]%f $PROMPT"
+      # Visual hint that you're inside this managed environment. On personal
+      # machines just [ilia]; on shared machines (bootstrapped with
+      # `install.sh --user`, which drops the marker file below) include the
+      # short hostname so shells on different boxes are distinguishable:
+      # [ilia@pipeline].
+      if [ -f "$HOME/.config/nix-dotfiles/shared-machine" ]; then
+        PROMPT="%F{cyan}[%n@%m]%f $PROMPT"
+      else
+        PROMPT="%F{cyan}[ilia]%f $PROMPT"
+      fi
 
       # On musl-based hosts (Alpine, Void, ...) tell mise to prefer musl-built
       # binaries when a registry provides both variants. Without this, mise
