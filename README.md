@@ -20,6 +20,38 @@ ownership when needed, drops a secrets-file template at
 safe to re-run. If you'd rather drive it by hand or your distro isn't
 recognised, see [Manual bootstrap](#manual-bootstrap) below.
 
+### Shared machines (EC2, company servers)
+
+On a box other engineers use, don't install onto the default user — bootstrap
+a dedicated account instead:
+
+```sh
+./install.sh --user ilia --ssh-key 'ssh-ed25519 AAAA... me@laptop'
+```
+
+This creates `ilia` with passwordless sudo and a `0700` home (unreadable to
+other users), installs Nix system-wide (multi-user daemon — the store is
+shared by design, profiles are per-user), copies this repo into
+`/home/ilia/nix-dotfiles`, and re-runs the normal install as `ilia`. The
+invoking user's home is never touched, and other engineers can run their own
+home-manager configs side by side. Linux + systemd only. `--ssh-key` is
+optional (`--copy-ssh-keys` copies the invoking user's authorized_keys
+instead; with neither, log in via `sudo -iu ilia`).
+
+Alternative for EC2: create the user at boot with cloud-init user data, then
+log in as them and run plain `./install.sh`:
+
+```yaml
+#cloud-config
+users:
+  - name: ilia
+    groups: sudo
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAA... me@laptop
+```
+
 ## What's in here
 
 ```
