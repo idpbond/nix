@@ -15,8 +15,10 @@ let
     "lua" "luadoc" "vim" "vimdoc" "query" "regex"
     # C/C++ are foundational — many other parsers depend on them.
     "c" "cpp"
-    # Configs / docs
-    "bash" "zsh" "tmux"
+    # Configs / docs. No "tmux": nvim-treesitter dropped the grammar and its
+    # queries upstream (2026 main-branch reorg), so tmux.conf falls back to
+    # vim's regex syntax highlighting.
+    "bash" "zsh"
     "json" "json5" "yaml" "toml" "markdown" "markdown_inline" "diff"
     "gitcommit" "gitignore" "git_config"
     # Web / TS-heavy stack from custom.lua
