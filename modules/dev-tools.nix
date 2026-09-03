@@ -94,6 +94,11 @@
     # Encrypted-config tools the user has env vars for.
     sops
     age
+  ] ++ lib.optionals (lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.sshpass) [
+    # Non-interactive password authentication for SSH automation. nixpkgs
+    # currently supports this on macOS and Linux; omit it on any host where
+    # that changes rather than making the whole Home Manager config fail.
+    pkgs.sshpass
   ] ++ lib.optionals pkgs.stdenv.isLinux [
     # Linux-only conveniences.
     xclip          # tmux-yank backend on X11

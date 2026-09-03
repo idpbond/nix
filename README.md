@@ -67,7 +67,7 @@ modules/
   yazi.nix             # programs.yazi + plugins/flavors vendored under yazi/
   git.nix              # user.name/user.email + sane defaults + delta pager
   fonts.nix            # IosevkaTerm Nerd Font (only loaded when withGui=true)
-  dev-tools.nix        # rg/fd/bat/eza/lazygit/gh/gcc/python/lsp/... + direnv
+  dev-tools.nix        # rg/fd/bat/eza/lazygit/gh/sshpass/python/lsp/... + direnv
 nvim/                  # AstroNvim user config; init.lua + lua/...
                        # custom.lua is preserved verbatim from the live system.
 yazi/                  # yazi config + vendored plugins (fg/git/lazygit) and
