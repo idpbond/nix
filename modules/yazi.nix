@@ -56,7 +56,7 @@
   # systems). xdg-utils gives us xdg-open on Linux.
   home.packages = with pkgs; [
     file
-  ] ++ lib.optionals pkgs.stdenv.isLinux [
+  ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
     xdg-utils  # provides xdg-open for the Linux opener variant
   ];
 }

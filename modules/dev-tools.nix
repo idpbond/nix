@@ -15,6 +15,9 @@
     jq
     yq-go
 
+    # Disk usage explorer.
+    ncdu
+
     # Git ergonomics.
     lazygit
     gh
@@ -99,7 +102,7 @@
     # currently supports this on macOS and Linux; omit it on any host where
     # that changes rather than making the whole Home Manager config fail.
     pkgs.sshpass
-  ] ++ lib.optionals pkgs.stdenv.isLinux [
+  ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
     # Linux-only conveniences.
     xclip          # tmux-yank backend on X11
     wl-clipboard   # tmux-yank backend on Wayland

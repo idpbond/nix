@@ -42,7 +42,7 @@
   # this works in login, interactive, and non-interactive shells without
   # touching the read-only HM-managed ~/.zshrc.
   home.sessionPath = [ "$HOME/.local/bin" "$HOME/bin" ]
-    ++ lib.optionals pkgs.stdenv.isLinux [ "/snap/bin" ];
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ "/snap/bin" ];
 
   programs.home-manager.enable = true;
 

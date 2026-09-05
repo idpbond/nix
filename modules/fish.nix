@@ -78,7 +78,7 @@
       # \eJ / \eK = ESC+uppercase, sent by Alacritty with option_as_alt "Both".
       bind \eJ _zellij_next_session
       bind \eK _zellij_prev_session
-    '' + lib.optionalString pkgs.stdenv.isDarwin ''
+    '' + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
 
       # YubiKey / gpg-agent wiring — mirrors modules/yubikey.nix, macOS only.
       # Reuses the same cached ssh-socket file so it's just as fast.

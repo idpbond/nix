@@ -12,5 +12,5 @@
   # Tell fontconfig about HM-managed fonts. No-op on macOS (which uses
   # CoreText); essential on Linux so apps find the new font without a
   # `fc-cache -fv` reboot.
-  fonts.fontconfig.enable = lib.mkDefault pkgs.stdenv.isLinux;
+  fonts.fontconfig.enable = lib.mkDefault pkgs.stdenv.hostPlatform.isLinux;
 }

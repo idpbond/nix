@@ -18,7 +18,7 @@
   #      can't gate on them at eval time without going stale; instead each
   #      piece guards itself at startup and degrades to a no-op when its
   #      binary is missing, rather than erroring on every new shell.
-  programs.zsh.initContent = lib.mkIf pkgs.stdenv.isDarwin (lib.mkAfter ''
+  programs.zsh.initContent = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (lib.mkAfter ''
     # --- gpg-agent as the SSH agent + pinentry TTY (needs gpgconf) ---
     if command -v gpgconf >/dev/null 2>&1; then
       # zsh exports $TTY, so avoid forking tty(1); fall back for safety.
