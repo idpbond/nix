@@ -265,7 +265,9 @@ create_secrets_template() {
   mkdir -p "$(dirname "$secrets")"
   cat > "$secrets" <<'EOF'
 # Sourced by the HM-managed zshrc if present. Keep this file 0600.
-# Add private exports here, e.g.:
+# Secrets shared across machines belong in the repo's sops-encrypted
+# secrets/env.yaml instead: `nix-secrets set NAME`, then commit.
+# Add machine-local private exports here, e.g.:
 # export CLAUDE_CODE_OAUTH_TOKEN='...'
 # export BOND_BOX_AGENT_PORT='19821'
 # export SOPS_AGE_KEY_CMD='bond-box-agent get-key'
@@ -282,6 +284,30 @@ run_hm_switch() {
   else
     nix run home-manager/master -- switch --impure --flake "${flake_dir}#default" -b backup
   fi
+}
+
+# Record where this checkout lives so `nix-secrets edit/set/unset` can find
+# it from any directory (the flake itself only sees its Nix store copy).
+record_repo_dir() {
+  mkdir -p "$HOME/.config/nix-dotfiles"
+  printf '%s\n' "$flake_dir" > "$HOME/.config/nix-dotfiles/repo-dir"
+}
+
+# Offer to decrypt the tracked secrets (secrets/env.yaml) into the shell env.
+# Needs a YubiKey (or a forwarded gpg-agent), so ask instead of failing.
+sync_secrets() {
+  ns="$HOME/.nix-profile/bin/nix-secrets"
+  [ -x "$ns" ] || return 0
+  if [ ! -t 0 ]; then
+    warn "not a terminal; decrypt secrets later with: nix-secrets sync"
+    return 0
+  fi
+  printf '\033[1;36m==> decrypt tracked secrets now? A YubiKey is needed. [y/N] \033[0m'
+  read -r answer || answer=""
+  case "$answer" in
+    [yY]*) "$ns" sync || warn "secret sync failed; retry with: nix-secrets sync" ;;
+    *)     log "skipped; run 'nix-secrets sync' (or 'nix-secrets skip') later" ;;
+  esac
 }
 
 # Run nvim once headlessly so lazy.nvim downloads + compiles every plugin
@@ -349,8 +375,10 @@ fi
 
 fix_nix_perms "$os"
 create_secrets_template
+record_repo_dir
 run_hm_switch
 warm_neovim
+sync_secrets
 
 printf '\n\033[1;32mDone.\033[0m\n\n'
 if [ "${NIX_DOTFILES_SHARED:-0}" = 1 ]; then
@@ -369,7 +397,8 @@ Next steps:
      automatically; pre-existing ones are left alone):
        sudo chsh -s "\$(command -v zsh)" ${USER}
 
-  3. As ${USER}, edit ${HOME}/.config/zsh/secrets.zsh and put your tokens there.
+  3. As ${USER}, run "nix-secrets sync" if you skipped it above. Put
+     machine-local tokens in ${HOME}/.config/zsh/secrets.zsh.
 
 To re-apply changes later (as ${USER}):
 
@@ -385,7 +414,8 @@ Next steps:
   2. If zsh isn't your login shell yet:
        sudo chsh -s "\$(command -v zsh)" "\$USER"
 
-  3. Edit ~/.config/zsh/secrets.zsh and put your tokens there.
+  3. Run "nix-secrets sync" if you skipped it above. Put machine-local
+     tokens in ~/.config/zsh/secrets.zsh.
 
 To re-apply changes later:
 

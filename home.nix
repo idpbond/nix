@@ -10,6 +10,7 @@
     ./modules/mise.nix
     ./modules/yazi.nix
     ./modules/yubikey.nix
+    ./modules/secrets.nix
     ./modules/alacritty.nix
     ./modules/fish.nix
     ./modules/zellij.nix

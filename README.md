@@ -16,7 +16,9 @@ git clone https://github.com/idpbond/nix.git nix-dotfiles && cd nix-dotfiles
 installs the right prerequisites, runs the Determinate Nix installer with
 the right flags (auto-detects systemd vs. `--init none`), reclaims `/nix`
 ownership when needed, drops a secrets-file template at
-`~/.config/zsh/secrets.zsh`, and runs `home-manager switch`. Idempotent —
+`~/.config/zsh/secrets.zsh`, runs `home-manager switch`, and offers to
+decrypt the [tracked secrets](#tracked-secrets-sops--yubikey) (YubiKey
+needed). Idempotent —
 safe to re-run. If you'd rather drive it by hand or your distro isn't
 recognised, see [Manual bootstrap](#manual-bootstrap) below.
 
@@ -116,9 +118,12 @@ Improvements:
   compile in the Nix store, then symlink into `~/.local/share/nvim/site/parser/`.
   nvim-treesitter sees them as already-installed; first-open of any covered
   filetype is instant. See the *Adding a treesitter parser* section below.
-- **Secrets stop living in `.zshrc`.** Tokens move to
-  `~/.config/zsh/secrets.zsh` (chmod 600, gitignored), sourced from the
-  generated zshrc. The Nix store never sees them.
+- **Secrets stop living in `.zshrc`.** Secrets shared across machines are
+  committed sops-encrypted in `secrets/env.yaml` and decrypted with a
+  YubiKey by `nix-secrets sync` (see
+  [Tracked secrets](#tracked-secrets-sops--yubikey)). Machine-local tokens go
+  in `~/.config/zsh/secrets.zsh` (chmod 600, never tracked). Both are sourced
+  from the generated zshrc; the Nix store only sees ciphertext.
 - **direnv + nix-direnv** are wired in for per-project envs that don't need
   to leak into the global shell.
 - **Cross-platform, user-agnostic.** `aarch64-linux`, `x86_64-linux`,
@@ -185,6 +190,9 @@ mv ~/.config/mise ~/.config/mise.pre-nix
 ```
 
 ### 3. Stash secrets
+
+Tracked secrets arrive with the repo; decrypt them after step 4 with
+`nix-secrets sync`. For machine-local values only:
 
 ```sh
 mkdir -p ~/.config/zsh
@@ -260,6 +268,52 @@ LSPs, formatters, and treesitter parsers are already on PATH and in
 | Garbage-collect old generations | `nix-collect-garbage --delete-older-than 14d` |
 | See what changed | `nix store diff-closures /nix/var/nix/profiles/per-user/$USER/home-manager-{N-1,N}-link` |
 
+## Tracked secrets (sops + YubiKey)
+
+`secrets/env.yaml` is a flat `NAME: value` map, encrypted with
+[sops](https://github.com/getsops/sops) to the three YubiKey PGP keys in
+`.sops.yaml`. Any one key decrypts. Names are in clear text; values are not.
+Their public keys are committed in `secrets/pubkeys.asc`.
+
+| Action | Command |
+| --- | --- |
+| Add or change a secret | `nix-secrets set OPENAI_API_KEY` (hidden prompt, or pipe the value on stdin) |
+| Remove a secret | `nix-secrets unset OPENAI_API_KEY` |
+| Edit all secrets in `$EDITOR` | `nix-secrets edit` |
+| List names (no YubiKey) | `nix-secrets list` |
+| Decrypt into the shell env | `nix-secrets sync` |
+| Check state | `nix-secrets status` |
+| After editing `.sops.yaml` recipients | `nix-secrets updatekeys` |
+
+`set`, `unset` and `edit` change the repo checkout, then sync this host.
+Commit and push `secrets/env.yaml` afterwards. On other hosts:
+`git pull`, `home-manager switch`, then `nix-secrets sync`. The switch prints
+a notice whenever the committed secrets differ from the ones last synced on
+that host. Decryption is not done during the switch: Home Manager activation
+runs with a minimal `PATH` that lacks the host's card-capable `gpg`.
+
+`sync` decrypts the checkout's `secrets/env.yaml` when it can find it (so
+uncommitted or un-switched edits count), else the active generation's copy.
+It writes `export` lines to `~/.config/zsh/secrets.sops.zsh` and
+`set -gx` lines to `~/.config/fish/secrets.sops.fish` (both 0600). The shells
+source them before `secrets.zsh`/`secrets.fish`, so machine-local values
+override tracked ones. Open a new shell to pick up changes. On a fresh host
+`sync` imports `secrets/pubkeys.asc` and runs `gpg --card-status` to create
+the card key stubs.
+
+The edit commands find the checkout through `$NIX_DOTFILES_DIR`, the current
+git repo, or `~/.config/nix-dotfiles/repo-dir` (written by `install.sh`).
+
+Requirements and limits:
+
+- `gpg` comes from the host, not Nix (see `modules/yubikey.nix`). On Linux,
+  install the distro `gnupg` package, plus `pcscd` if the YubiKey is plugged
+  into that machine.
+- On a remote host with no YubiKey attached, either forward your local
+  gpg-agent over SSH (`RemoteForward <remote gpg-agent socket> <local
+  S.gpg-agent.extra>`), or run `nix-secrets skip` to silence the notice.
+- Values must be scalars. Names must be valid shell variable names.
+
 ## Adding a tool
 
 Add it to `modules/dev-tools.nix` and `home-manager switch`. Done.
@@ -305,6 +359,7 @@ Home Manager prefers XDG locations where the upstream tool supports them:
 | `~/.local/share/nvim/site/parser` | Nix-built treesitter parsers |
 | `~/.config/mise/config.toml` | `programs.mise.globalConfig` |
 | `~/.config/git/config` | `programs.git.settings` |
+| `~/.config/zsh/secrets.sops.zsh`, `~/.config/fish/secrets.sops.fish` | written by `nix-secrets sync` (not a Nix link) |
 
 ## Portability checklist
 
@@ -312,7 +367,8 @@ To rebuild this environment on a fresh box you need three things:
 
 1. Nix installed (see step 1 above).
 2. The `nix-dotfiles/` directory (with `flake.lock` checked in for byte-identical builds).
-3. `~/.config/zsh/secrets.zsh` with your tokens.
+3. One of the YubiKeys in `.sops.yaml` (then `nix-secrets sync`), plus
+   `~/.config/zsh/secrets.zsh` for any machine-local tokens.
 
 Then:
 
@@ -433,7 +489,9 @@ alone unless you pass `--purge-pkgs`:
 
 After the script finishes, the repo directory itself can be `rm -rf`'d
 and your secrets file at `~/.config/zsh/secrets.zsh` is offered for
-deletion separately so you don't lose tokens by accident.
+deletion separately so you don't lose tokens by accident. The decrypted
+tracked secrets (`secrets.sops.*`) are also offered; they can be regenerated
+with `nix-secrets sync`.
 
 ## Common bootstrap errors
 

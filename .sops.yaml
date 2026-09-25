@@ -1,0 +1,10 @@
+# sops recipients for secrets/*.yaml. One key group: any ONE of these YubiKeys
+# can decrypt. After changing this list, run `nix-secrets updatekeys`.
+# Public keys live in secrets/pubkeys.asc (nix-secrets imports them).
+creation_rules:
+  - path_regex: (^|/)secrets/[^/]+\.yaml$
+    key_groups:
+      - pgp:
+          - 56E081CC100A52C3D2A70B39D9279C44E32577F2 # Ilia Partuk (YubiKey 35645559 BOND 5c Nano) <ilia@wearebond.com>
+          - 80BBF23C41EFCBA935DE7746E668F52E30197825 # Ilia Partuk (YubiKey 35804044) <ilia@wearebond.com>
+          - AA89CC60650D21A86144814284D04B1E1AE9F684 # Ilia Partuk (YubiKey 26083469) <ilia@wearebond.com>

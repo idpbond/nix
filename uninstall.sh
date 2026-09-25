@@ -65,6 +65,15 @@ if ask "Remove backup files HM created during initial switch (*.backup, *.pre-ni
   find "$HOME" -maxdepth 3 \( -name '*.backup' -o -name '*.pre-nix' \) -print -exec rm -rf {} + 2>/dev/null || true
 fi
 
+# Decrypted copies of the tracked secrets (from `nix-secrets sync`). The
+# encrypted source stays in the repo, so these can be regenerated.
+if [ -f "$HOME/.config/zsh/secrets.sops.zsh" ] || [ -f "$HOME/.config/fish/secrets.sops.fish" ]; then
+  if ask "Remove decrypted tracked secrets (~/.config/{zsh,fish}/secrets.sops.*)?"; then
+    rm -f "$HOME/.config/zsh/secrets.sops.zsh" "$HOME/.config/fish/secrets.sops.fish" \
+          "$HOME/.local/state/nix-dotfiles/secrets.synced"
+  fi
+fi
+
 # Note: ~/.config/zsh/secrets.zsh deliberately NOT removed by default — it
 # contains tokens the user may want to keep around. Offer separately.
 if [ -f "$HOME/.config/zsh/secrets.zsh" ]; then
