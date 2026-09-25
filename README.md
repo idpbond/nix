@@ -16,9 +16,11 @@ git clone https://github.com/idpbond/nix.git nix-dotfiles && cd nix-dotfiles
 installs the right prerequisites, runs the Determinate Nix installer with
 the right flags (auto-detects systemd vs. `--init none`), reclaims `/nix`
 ownership when needed, drops a secrets-file template at
-`~/.config/zsh/secrets.zsh`, runs `home-manager switch`, and offers to
-decrypt the [tracked secrets](#tracked-secrets-sops--yubikey) (YubiKey
-needed). Idempotent —
+`~/.config/zsh/secrets.zsh`, runs `home-manager switch`, installs Claude
+Code and Codex with their native installers (see
+[Claude Code and Codex](#claude-code-and-codex)), and offers to decrypt the
+[tracked secrets](#tracked-secrets-sops--yubikey) (YubiKey needed).
+Idempotent —
 safe to re-run. If you'd rather drive it by hand or your distro isn't
 recognised, see [Manual bootstrap](#manual-bootstrap) below.
 
@@ -378,6 +380,23 @@ nix run home-manager/master -- switch --impure --flake ".#default" -b backup
 
 `flake.lock` lives inside the repo and pins nixpkgs + home-manager, so any
 two boxes that switch from the same lockfile end up with the same closure.
+
+## Claude Code and Codex
+
+`install.sh` installs both CLIs with their own native installers
+(`claude.ai/install.sh`, `chatgpt.com/codex/install.sh`), not with Nix. Both
+update themselves in place, under `~/.local/share/claude` and `~/.codex`,
+which a read-only Nix store path cannot do. The launchers go in
+`~/.local/bin`, which `home.sessionPath` puts on `PATH`.
+
+- It installs each one only when `~/.local/bin/<name>` is missing, so re-runs
+  never touch a self-updated copy.
+- `./install.sh --no-agent-clis` skips both (also with `--user`).
+- On musl hosts (Alpine) it skips Claude Code and prints a warning; use the
+  steps below. Codex ships musl builds and installs normally.
+- Do not also add `claude-code` or `codex` to `modules/dev-tools.nix`:
+  `~/.local/bin` comes first on `PATH`, so the Nix copy would be silently
+  shadowed.
 
 ## Installing Claude Code on Alpine
 

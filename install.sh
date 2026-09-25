@@ -5,7 +5,8 @@
 #
 #   ./install.sh
 #       Personal machine: install prerequisites + Nix, drop a secrets-file
-#       template, and run home-manager switch for the CURRENT user.
+#       template, run home-manager switch, and install the self-updating
+#       Claude Code + Codex CLIs for the CURRENT user.
 #
 #   ./install.sh --user ilia [--ssh-key 'ssh-ed25519 AAA...'] [--copy-ssh-keys]
 #       Shared machine (EC2, company server): create a dedicated user with
@@ -14,6 +15,8 @@
 #       home-manager), copy this repo into that user's home, and re-run the
 #       personal-machine path as them. The invoking/default user's home is
 #       never touched. Linux + systemd only.
+#
+#   --no-agent-clis   skip installing Claude Code and Codex (either mode).
 #
 # Idempotent — safe to re-run.
 set -eu
@@ -25,7 +28,7 @@ warn() { printf '\033[1;33m!!  %s\033[0m\n' "$*" >&2; }
 die() { printf '\033[1;31m!!  %s\033[0m\n' "$*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -40,11 +43,13 @@ asroot() {
 shared_user=""
 ssh_key=""
 copy_ssh_keys=0
+agent_clis=1
 while [ $# -gt 0 ]; do
   case "$1" in
     --user)          shared_user=${2:?--user needs a username}; shift 2 ;;
     --ssh-key)       ssh_key=${2:?--ssh-key needs a public key string}; shift 2 ;;
     --copy-ssh-keys) copy_ssh_keys=1; shift ;;
+    --no-agent-clis) agent_clis=0; shift ;;
     -h|--help)       usage 0 ;;
     *)               warn "unknown argument: $1"; usage 1 ;;
   esac
@@ -243,14 +248,16 @@ bootstrap_shared_user() {
   fi
 
   log "re-running install as $u"
+  flags=""
+  [ "$agent_clis" = 0 ] && flags=" --no-agent-clis"
   # A login shell gives a clean environment so $USER/$HOME (which the flake
   # resolves via --impure) point at $u, not at the invoking user.
   # NIX_DOTFILES_SHARED makes the child print closing instructions addressed
   # to the person reading this terminal (the INVOKING user), not to $u.
   if command -v sudo >/dev/null 2>&1; then
-    exec sudo -iu "$u" sh -c 'cd "$HOME/nix-dotfiles" && NIX_DOTFILES_SHARED=1 ./install.sh'
+    exec sudo -iu "$u" sh -c 'cd "$HOME/nix-dotfiles" && NIX_DOTFILES_SHARED=1 ./install.sh'"$flags"
   else
-    exec su - "$u" -c 'cd "$HOME/nix-dotfiles" && NIX_DOTFILES_SHARED=1 ./install.sh'
+    exec su - "$u" -c 'cd "$HOME/nix-dotfiles" && NIX_DOTFILES_SHARED=1 ./install.sh'"$flags"
   fi
 }
 
@@ -308,6 +315,45 @@ sync_secrets() {
     [yY]*) "$ns" sync || warn "secret sync failed; retry with: nix-secrets sync" ;;
     *)     log "skipped; run 'nix-secrets sync' (or 'nix-secrets skip') later" ;;
   esac
+}
+
+# Claude Code and Codex use their own native installers, not Nix: both
+# update themselves in place (~/.local/share/claude, ~/.codex), which a
+# read-only Nix store path cannot do. Install only when missing so re-runs
+# never touch a self-updated copy. Do not also add them to dev-tools.nix;
+# ~/.local/bin comes first on PATH and would shadow the Nix copy.
+install_agent_clis() {
+  if [ "$agent_clis" = 0 ]; then
+    log "--no-agent-clis set; skipping Claude Code and Codex"
+    return
+  fi
+  # Both installers add a PATH line to ~/.zprofile / ~/.zshrc when
+  # ~/.local/bin is not on PATH yet. Those files are read-only Home Manager
+  # links, and home.sessionPath already covers ~/.local/bin for new shells.
+  PATH="$HOME/.local/bin:$PATH"
+  export PATH
+
+  if [ -x "$HOME/.local/bin/claude" ]; then
+    log "Claude Code already installed; leaving it to self-update"
+  elif ldd --version 2>&1 | grep -qi musl; then
+    # The native build needs bash, libgcc, libstdc++ and a system ripgrep
+    # on musl; see README "Installing Claude Code on Alpine".
+    warn "musl host: install Claude Code by hand (README: Installing Claude Code on Alpine)"
+  elif command -v bash >/dev/null 2>&1; then
+    log "installing Claude Code (native installer)"
+    curl -fsSL https://claude.ai/install.sh | bash \
+      || warn "Claude Code install failed; retry: curl -fsSL https://claude.ai/install.sh | bash"
+  else
+    warn "bash not found; skipping Claude Code (its installer needs bash)"
+  fi
+
+  if [ -x "$HOME/.local/bin/codex" ]; then
+    log "Codex already installed; leaving it to self-update"
+  else
+    log "installing Codex (native installer)"
+    curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_NON_INTERACTIVE=1 sh \
+      || warn "Codex install failed; retry: curl -fsSL https://chatgpt.com/codex/install.sh | sh"
+  fi
 }
 
 # Run nvim once headlessly so lazy.nvim downloads + compiles every plugin
@@ -377,6 +423,7 @@ fix_nix_perms "$os"
 create_secrets_template
 record_repo_dir
 run_hm_switch
+install_agent_clis
 warm_neovim
 sync_secrets
 
