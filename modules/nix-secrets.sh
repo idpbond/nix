@@ -2,7 +2,7 @@
 # decrypt it into shell files that zsh and fish source at startup.
 #
 # Wrapped by modules/secrets.nix (writeShellApplication), which provides sops,
-# jq, yq and coreutils on PATH and sets:
+# jq, grep and coreutils on PATH and sets:
 #   NIX_SECRETS_ACTIVATED_FILE  encrypted env.yaml of the active HM generation
 #   NIX_SECRETS_PUBKEYS         armored public keys of all recipients
 # gpg is deliberately NOT provided: it must be the host's gpg that can reach
@@ -163,7 +163,8 @@ cmd_status() {
 }
 
 cmd_list() {
-  yq -r 'del(.sops) | keys | .[]' "$(default_src)"
+  # Top-level keys are plain text in sops YAML; skip the sops metadata.
+  grep -oE '^[A-Za-z_][A-Za-z0-9_]*:' "$(default_src)" | sed 's/:$//' | grep -vx sops || true
 }
 
 # Edit commands operate on the repo checkout, then sync from it so this

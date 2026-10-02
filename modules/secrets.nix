@@ -18,7 +18,7 @@ let
     name = "nix-secrets";
     # No gnupg here on purpose: the host gpg (or $SOPS_GPG_EXEC) talks to the
     # YubiKey's gpg-agent/scdaemon; a second Nix gpg stack would not.
-    runtimeInputs = with pkgs; [ sops jq yq-go coreutils gnugrep git ];
+    runtimeInputs = with pkgs; [ sops jq coreutils gnugrep gnused git ];
     runtimeEnv = {
       NIX_SECRETS_ACTIVATED_FILE = "${envFile}";
       NIX_SECRETS_PUBKEYS = "${pubkeys}";

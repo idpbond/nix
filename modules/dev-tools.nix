@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, lite, ... }:
 
 {
   # Tools that aren't tied to a specific program module above.
@@ -13,7 +13,6 @@
     fzf            # also wired up via programs.fzf in zsh.nix
     tree
     jq
-    yq-go
 
     # Disk usage explorer.
     ncdu
@@ -23,10 +22,6 @@
     gh
     delta
 
-    # Build tooling (treesitter parsers, npm postinstalls, etc.).
-    gnumake
-    gcc
-    pkg-config
     unzip
     curl
     wget
@@ -47,15 +42,44 @@
     # that other tools (npm-based CLIs, claude-code, etc.) need on PATH.
     # mise can still layer additional versions on top per-project via
     # `.mise.toml`, but a sane default lives here so musl-only distros
-    # like Alpine don't need to compile node from source.
+    # like Alpine don't need to compile node from source. nodejs_24 sits in
+    # the full-only block below.
     python3
-    nodejs_24
 
-    # Lua dev for AstroNvim itself.
-    lua-language-server
+    # Lua dev for AstroNvim itself (lua-language-server is in the LSP
+    # block below).
     stylua
     selene
     tree-sitter
+
+    # Shell scripting safety net.
+    shellcheck
+    shfmt
+
+    # Encrypted-config tools the user has env vars for.
+    sops
+    age
+  ] ++ lib.optionals (!lite) (
+    # Language servers, build tooling and full-profile extras; the lite
+    # profile drops them (see `lite` in flake.nix). On lite hosts, mise
+    # supplies node etc. per project instead.
+    [
+      # Build tooling (treesitter parsers, npm postinstalls, etc.).
+      gnumake
+      gcc
+      pkg-config
+
+      # Global Node default (see the runtimes note above) and the Web/JS
+      # formatter used from custom.lua's tailwind/cva config.
+      nodejs_24
+      prettier
+
+      yq-go
+      lua-language-server
+      typescript-language-server
+      vscode-langservers-extracted   # html/css/json/eslint
+      tailwindcss-language-server
+    ]
 
     # Ruby LSP fallback for standalone (non-bundler) files. Deliberately a
     # plain home package (~/.nix-profile/bin — after mise and the homebrew
@@ -74,7 +98,7 @@
     # already-activated store version ("You have already activated ruby-lsp
     # X but your Gemfile requires Y"). The withPackages binary wrapper pins
     # GEM_PATH to the store, making resolution fully deterministic.
-  ] ++ (
+    ++ (
     let
       rubyLspEnv = pkgs.ruby.withPackages (ps: [ ps.ruby-lsp ]);
       wrap = bin: pkgs.writeShellScriptBin bin ''
@@ -82,22 +106,7 @@
         exec ${rubyLspEnv}/bin/${bin} "$@"
       '';
     in map wrap [ "ruby-lsp" "ruby-lsp-launcher" ]
-  ) ++ [
-
-    # Web/JS formatters & linters used from custom.lua's tailwind/cva config.
-    prettier
-    typescript-language-server
-    vscode-langservers-extracted   # html/css/json/eslint
-    tailwindcss-language-server
-
-    # Shell scripting safety net.
-    shellcheck
-    shfmt
-
-    # Encrypted-config tools the user has env vars for.
-    sops
-    age
-  ] ++ lib.optionals (lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.sshpass) [
+  )) ++ lib.optionals (lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.sshpass) [
     # Non-interactive password authentication for SSH automation. nixpkgs
     # currently supports this on macOS and Linux; omit it on any host where
     # that changes rather than making the whole Home Manager config fail.

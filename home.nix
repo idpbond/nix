@@ -1,4 +1,4 @@
-{ config, pkgs, lib, system, username, homeDirectory, withGui, ... }:
+{ config, pkgs, lib, system, username, homeDirectory, withGui, lite, ... }:
 
 {
   imports = [
@@ -8,13 +8,15 @@
     ./modules/tmux.nix
     ./modules/neovim.nix
     ./modules/mise.nix
-    ./modules/yazi.nix
     ./modules/yubikey.nix
     ./modules/secrets.nix
     ./modules/alacritty.nix
-    ./modules/fish.nix
+  ] ++ lib.optionals (!lite) [
+    # Left out of the lite profile (see `lite` in flake.nix).
+    ./modules/yazi.nix
+    ./modules/fish.nix     # also brings starship
     ./modules/zellij.nix
-  ] ++ lib.optionals withGui [
+  ] ++ lib.optionals (withGui && !lite) [
     ./modules/fonts.nix
   ];
 

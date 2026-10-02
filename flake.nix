@@ -36,6 +36,16 @@
         if withGuiEnv != "" then withGuiEnv != "0" && withGuiEnv != "false"
         else isDarwin;
 
+      # Lite profile: drops the heavy, optional parts (all LSPs, AstroNvim,
+      # yazi, zellij, fish/starship, fonts, yq-go). LITE=1 / LITE=0 overrides
+      # per invocation; otherwise it is on when the marker file exists
+      # (`install.sh --lite` creates it), so a plain `home-manager switch`
+      # keeps the profile. The marker read is impure, like $HOME above.
+      liteEnv = builtins.getEnv "LITE";
+      lite =
+        if liteEnv != "" then liteEnv != "0" && liteEnv != "false"
+        else builtins.pathExists "${homeDirectory}/.config/nix-dotfiles/lite";
+
       pkgs = nixpkgs.legacyPackages.${system};
 
     in {
@@ -43,7 +53,7 @@
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [ ./home.nix ];
-          extraSpecialArgs = { inherit system username homeDirectory withGui; };
+          extraSpecialArgs = { inherit system username homeDirectory withGui lite; };
         };
 
       # Deterministic regression tests. Run with: nix flake check --impure

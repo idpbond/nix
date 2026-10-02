@@ -7,10 +7,21 @@ time, so the same flake works for any user on any host.
 
 ## Bootstrap (one command)
 
+Full profile:
+
 ```sh
-git clone https://github.com/idpbond/nix.git nix-dotfiles && cd nix-dotfiles
-./install.sh
+git clone https://github.com/idpbond/nix.git ~/nix-dotfiles && ~/nix-dotfiles/install.sh
 ```
+
+[Lite profile](#lite-profile) (about 2.1 GiB; no LSPs, AstroNvim, Node or
+build tools):
+
+```sh
+git clone https://github.com/idpbond/nix.git ~/nix-dotfiles && ~/nix-dotfiles/install.sh --lite
+```
+
+Both need `git`. To re-run on a host that already has the checkout, use
+`~/nix-dotfiles/install.sh [--lite]` alone.
 
 `install.sh` detects Alpine / Debian / Ubuntu / Fedora / Arch / macOS,
 installs the right prerequisites, runs the Determinate Nix installer with
@@ -468,10 +479,35 @@ sudo apk add build-base python3 linux-headers
 The same logic applies to any interpreter mise manages: prefer Nix for the
 system-wide default, mise for project pins.
 
+## Lite profile
+
+For small VMs and containers, the lite profile leaves out the heavy, optional
+parts. It is about 2.1 GiB instead of 5.2 GiB (macOS with fonts) or about
+4.1 GiB (headless Linux).
+
+Left out: all language servers and AstroNvim (neovim stays, with no user
+config), the C build tools (gcc, make, pkg-config), Node and prettier, yazi,
+zellij, fish, starship, fonts and yq-go. Kept: everything else, including
+git, tmux, zsh, mise, python3, sops/`nix-secrets`, stylua, shfmt, ShellCheck
+and selene. Get Node per project with mise. mise runtimes that compile from
+source (for example Ruby) need a system C compiler on lite hosts.
+
+| Action | Command |
+| --- | --- |
+| Bootstrap a lite host | `./install.sh --lite` (also with `--user`) |
+| Switch an existing host to lite | `mkdir -p ~/.config/nix-dotfiles && touch ~/.config/nix-dotfiles/lite`, then switch |
+| Back to full | `rm ~/.config/nix-dotfiles/lite`, then switch |
+| Override for one switch | `LITE=1` or `LITE=0 home-manager switch --impure --flake ".#default"` |
+
+The marker file keeps a plain `home-manager switch` on the same profile. A
+host that goes from full to lite keeps its lazy.nvim plugin tree in
+`~/.local/share/nvim/lazy`; delete it by hand if you want the space back.
+
 ## GUI assets (fonts, etc.)
 
 GUI-only packages (currently just `nerd-fonts.iosevka-term`) sit behind a
-`withGui` flag in `flake.nix`. Default behavior:
+`withGui` flag in `flake.nix`. The [lite profile](#lite-profile) always
+leaves them out. Default behavior:
 
 - **macOS** (`*-darwin`) — on, since Darwin is always GUI in practice.
 - **Linux** — off, since the same flake runs on headless VMs / containers

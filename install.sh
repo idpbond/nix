@@ -17,6 +17,9 @@
 #       never touched. Linux + systemd only.
 #
 #   --no-agent-clis   skip installing Claude Code and Codex (either mode).
+#   --lite            lite profile: no LSPs/AstroNvim (vanilla neovim), yazi,
+#                     zellij, fish, starship, fonts or yq-go. Persists via
+#                     ~/.config/nix-dotfiles/lite; delete it to go full.
 #
 # Idempotent — safe to re-run.
 set -eu
@@ -28,7 +31,7 @@ warn() { printf '\033[1;33m!!  %s\033[0m\n' "$*" >&2; }
 die() { printf '\033[1;31m!!  %s\033[0m\n' "$*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -44,12 +47,14 @@ shared_user=""
 ssh_key=""
 copy_ssh_keys=0
 agent_clis=1
+lite=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --user)          shared_user=${2:?--user needs a username}; shift 2 ;;
     --ssh-key)       ssh_key=${2:?--ssh-key needs a public key string}; shift 2 ;;
     --copy-ssh-keys) copy_ssh_keys=1; shift ;;
     --no-agent-clis) agent_clis=0; shift ;;
+    --lite)          lite=1; shift ;;
     -h|--help)       usage 0 ;;
     *)               warn "unknown argument: $1"; usage 1 ;;
   esac
@@ -250,6 +255,7 @@ bootstrap_shared_user() {
   log "re-running install as $u"
   flags=""
   [ "$agent_clis" = 0 ] && flags=" --no-agent-clis"
+  [ "$lite" = 1 ] && flags="$flags --lite"
   # A login shell gives a clean environment so $USER/$HOME (which the flake
   # resolves via --impure) point at $u, not at the invoking user.
   # NIX_DOTFILES_SHARED makes the child print closing instructions addressed
@@ -368,6 +374,10 @@ install_agent_clis() {
 # exact, tested versions on every host. To intentionally move forward, run
 # `:Lazy update` interactively and re-commit nvim/lazy-lock.json.
 warm_neovim() {
+  if [ -f "$HOME/.config/nix-dotfiles/lite" ]; then
+    log "lite profile: vanilla neovim, no plugin cache to warm"
+    return
+  fi
   if ! command -v nvim >/dev/null 2>&1; then
     warn "nvim not on PATH yet; open a new shell and run: nvim --headless '+Lazy! restore' +qa"
     return
@@ -417,6 +427,13 @@ if [ "${NIX_DOTFILES_SHARED:-0}" = 1 ] && [ ! -f "$HOME/.config/nix-dotfiles/sha
   log "marking this account as a shared-machine install"
   mkdir -p "$HOME/.config/nix-dotfiles"
   touch "$HOME/.config/nix-dotfiles/shared-machine"
+fi
+
+# Lite profile marker; flake.nix reads it on every switch (see `lite`).
+if [ "$lite" = 1 ] && [ ! -f "$HOME/.config/nix-dotfiles/lite" ]; then
+  log "selecting the lite profile"
+  mkdir -p "$HOME/.config/nix-dotfiles"
+  touch "$HOME/.config/nix-dotfiles/lite"
 fi
 
 fix_nix_perms "$os"

@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ pkgs, lib, lite, ... }:
 
 let
   # Treesitter parsers compiled by Nix. nvim-treesitter inside AstroNvim sees
@@ -58,7 +58,10 @@ let
   # with `interface` highlighted but not `export`/`function`. Query dirs for
   # languages without a parser are never read, so linking everything is free.
 in
+lib.mkMerge [
 {
+  # The lite profile (see `lite` in flake.nix) installs vanilla neovim only:
+  # no AstroNvim config, no tools/LSPs on its PATH, no Nix-built parsers.
   programs.neovim = {
     enable = true;
     defaultEditor = true;
@@ -78,7 +81,7 @@ in
     # here only *exist* on PATH — they attach because they're enabled in
     # nvim/lua/plugins/lsp-servers.lua (astrolsp `servers`). Keep the two lists
     # in sync when adding a language.
-    extraPackages = with pkgs; [
+    extraPackages = lib.optionals (!lite) (with pkgs; [
       # Used by AstroNvim's default plugins and the user's custom.lua.
       gcc            # treesitter parsers compile with cc
       gnumake
@@ -130,9 +133,11 @@ in
       # it with the Xcode toolchain (/usr/bin/sourcekit-lsp) and the toolchain
       # copy matches the installed SDK. lsp-servers.lua enables it only when
       # the binary is present.
-    ];
+    ]);
   };
+}
 
+(lib.mkIf (!lite) {
   # AstroNvim's user config (init.lua + lua/...) is materialized here as
   # individual file symlinks so that lazy.nvim can still write
   # ~/.config/nvim/lazy-lock.json next to them.
@@ -153,5 +158,5 @@ in
   # main-branch nvim-treesitter.
   xdg.dataFile."nvim/site/queries".source =
     "${pkgs.vimPlugins.nvim-treesitter}/runtime/queries";
-}
-
+})
+]
