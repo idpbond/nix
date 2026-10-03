@@ -256,8 +256,10 @@ sudo chsh -s "$(grep -m1 '/zsh$' /etc/shells)" "$USER"
 
 Do not use the Nix zsh (`command -v zsh` usually resolves to it) as a login
 shell: `uninstall.sh` deletes it, and sshd then drops every login. install.sh
-already installs a distro zsh; on Alpine, `sudo apk add zsh` if it is
-missing. The HM-managed `~/.zshrc` works the same under either zsh.
+installs a distro zsh on the distros it recognises. On other hosts, install
+the distro zsh package first; until then, keep bash as the login shell and
+run `zsh` (or `exec zsh`) after logging in. `--user` accounts get bash in
+that case. The HM-managed `~/.zshrc` works the same under either zsh.
 
 ### 6. First-launch nvim
 

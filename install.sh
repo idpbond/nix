@@ -41,6 +41,19 @@ asroot() {
   if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo "$@"; fi
 }
 
+# A zsh that is safe as a login shell: listed in /etc/shells, executable,
+# and not from Nix. A Nix zsh disappears on uninstall (or GC) and sshd then
+# drops every login for the account.
+system_zsh() {
+  [ -r /etc/shells ] || return 1
+  while IFS= read -r s; do
+    case "$s" in */zsh) ;; *) continue ;; esac
+    case "$s" in /nix/*|*/.nix-profile/*) continue ;; esac
+    if [ -x "$s" ]; then printf '%s\n' "$s"; return 0; fi
+  done < /etc/shells
+  return 1
+}
+
 # ---------- args -------------------------------------------------------------
 
 shared_user=""
@@ -88,7 +101,7 @@ install_prereqs() {
   # common case on re-runs and for the second engineer onboarding onto a
   # shared box.
   if command -v curl >/dev/null 2>&1 && command -v git >/dev/null 2>&1 \
-     && command -v xz >/dev/null 2>&1 && command -v zsh >/dev/null 2>&1; then
+     && command -v xz >/dev/null 2>&1 && system_zsh >/dev/null; then
     log "prerequisites already present; skipping package install"
     return
   fi
@@ -118,7 +131,7 @@ install_prereqs() {
       # Stock macOS already has curl/git/xz; nothing to install.
       ;;
     *)
-      warn "unrecognised distro '$os'; skipping prereqs (install curl/git/xz manually if missing)"
+      warn "unrecognised distro '$os'; skipping prereqs (install curl/git/xz/zsh manually if missing)"
       ;;
   esac
 }
@@ -194,9 +207,14 @@ bootstrap_shared_user() {
   else
     grp=sudo
     getent group sudo >/dev/null 2>&1 || grp=wheel
-    # zsh is guaranteed by install_prereqs, which ran before us; the HM
-    # zshrc in the user's home picks it up on first login.
-    shell=$(command -v zsh || echo /bin/bash)
+    # install_prereqs normally provides a distro zsh; the HM zshrc in the
+    # user's home picks it up on first login. Never a Nix zsh (see
+    # system_zsh); without a distro zsh, fall back to bash, then sh.
+    if ! shell=$(system_zsh); then
+      shell=/bin/sh
+      [ -x /bin/bash ] && shell=/bin/bash
+      warn "no distro zsh in /etc/shells; $u gets $shell as login shell"
+    fi
     log "creating user $u (groups: $grp, shell: $shell)"
     asroot useradd -m -G "$grp" -s "$shell" "$u"
   fi
@@ -444,6 +462,13 @@ install_agent_clis
 warm_neovim
 sync_secrets
 
+# Login-shell advice: only ever a distro zsh (see system_zsh).
+if zsh_path=$(system_zsh); then
+  chsh_hint="sudo chsh -s $zsh_path"
+else
+  chsh_hint="(no distro zsh found: install your distro's zsh package first, then) sudo chsh -s /path/to/zsh"
+fi
+
 printf '\n\033[1;32mDone.\033[0m\n\n'
 if [ "${NIX_DOTFILES_SHARED:-0}" = 1 ]; then
   # This run happened as the dedicated user, but the person reading this is
@@ -459,7 +484,7 @@ Next steps:
 
   2. If zsh isn't ${USER}'s login shell yet (freshly created accounts get it
      automatically; pre-existing ones are left alone):
-       sudo chsh -s "\$(grep -m1 '/zsh\$' /etc/shells)" ${USER}
+       ${chsh_hint} ${USER}
 
   3. As ${USER}, run "nix-secrets sync" if you skipped it above. Put
      machine-local tokens in ${HOME}/.config/zsh/secrets.zsh.
@@ -476,7 +501,7 @@ Next steps:
        exec zsh
 
   2. If zsh isn't your login shell yet:
-       sudo chsh -s "\$(grep -m1 '/zsh\$' /etc/shells)" "\$USER"
+       ${chsh_hint} "\$USER"
 
   3. Run "nix-secrets sync" if you skipped it above. Put machine-local
      tokens in ~/.config/zsh/secrets.zsh.
