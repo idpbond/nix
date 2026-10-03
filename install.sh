@@ -24,6 +24,13 @@
 # Idempotent — safe to re-run.
 set -eu
 
+# cloud-init runcmd and other bare environments may not set HOME/USER.
+# Derive them from the passwd entry so `set -u` doesn't abort.
+USER=${USER:-$(id -un)}
+HOME=${HOME:-$(getent passwd "$USER" 2>/dev/null | cut -d: -f6)}
+HOME=${HOME:-$(eval echo "~$USER")}
+export USER HOME
+
 flake_dir=$(cd "$(dirname "$0")" && pwd)
 
 log() { printf '\033[1;36m==> %s\033[0m\n' "$*"; }

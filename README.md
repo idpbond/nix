@@ -53,6 +53,22 @@ home-manager configs side by side. Linux + systemd only. `--ssh-key` is
 optional (`--copy-ssh-keys` copies the invoking user's authorized_keys
 instead; with neither, log in via `sudo -iu ilia`).
 
+`install.sh` needs no input in this mode, so it can run unattended from
+cloud-init user data. It runs as root there; add `--lite` for the lite
+profile. Output goes to `/var/log/cloud-init-output.log`:
+
+```yaml
+#cloud-config
+package_update: true
+packages: [git]
+runcmd:
+  - git clone https://github.com/idpbond/nix.git /root/nix-dotfiles
+  - /root/nix-dotfiles/install.sh --user ilia --lite --ssh-key 'ssh-ed25519 AAAA... me@laptop'
+```
+
+Unattended runs skip the secrets prompt; log in and run `nix-secrets sync`
+(with a forwarded gpg-agent) or `nix-secrets skip`.
+
 Alternative for EC2: create the user at boot with cloud-init user data, then
 log in as them and run plain `./install.sh`:
 
