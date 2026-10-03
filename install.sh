@@ -459,7 +459,7 @@ Next steps:
 
   2. If zsh isn't ${USER}'s login shell yet (freshly created accounts get it
      automatically; pre-existing ones are left alone):
-       sudo chsh -s "\$(command -v zsh)" ${USER}
+       sudo chsh -s "\$(grep -m1 '/zsh\$' /etc/shells)" ${USER}
 
   3. As ${USER}, run "nix-secrets sync" if you skipped it above. Put
      machine-local tokens in ${HOME}/.config/zsh/secrets.zsh.
@@ -476,7 +476,7 @@ Next steps:
        exec zsh
 
   2. If zsh isn't your login shell yet:
-       sudo chsh -s "\$(command -v zsh)" "\$USER"
+       sudo chsh -s "\$(grep -m1 '/zsh\$' /etc/shells)" "\$USER"
 
   3. Run "nix-secrets sync" if you skipped it above. Put machine-local
      tokens in ~/.config/zsh/secrets.zsh.

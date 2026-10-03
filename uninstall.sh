@@ -38,6 +38,68 @@ ask() {
   case "$ans" in y|Y|yes|YES) return 0 ;; *) return 1 ;; esac
 }
 
+# ---------- step 0: keep the login shell usable -------------------------------
+#
+# If the account's login shell lives in the Nix store / HM profile (e.g. a
+# `chsh -s ~/.nix-profile/bin/zsh`), or is the distro zsh that --purge-pkgs is
+# about to remove, the steps below delete it. sshd then accepts the key but
+# cannot start the shell and drops the connection: the account is locked out.
+# Move the account to a shell that survives before removing anything.
+
+login_shell() {
+  if command -v getent >/dev/null 2>&1; then
+    getent passwd "$USER" | cut -d: -f7
+  elif [ "$(uname -s)" = Darwin ]; then
+    dscl . -read "/Users/$USER" UserShell | awk '{print $2}'
+  else
+    awk -F: -v u="$USER" '$1 == u { print $7 }' /etc/passwd
+  fi
+}
+
+# True when the shell will not exist after this script finishes.
+shell_at_risk() {
+  sh_path=$1
+  real=$(readlink -f "$sh_path" 2>/dev/null || printf '%s' "$sh_path")
+  case "$sh_path:$real" in
+    "$HOME"/.nix-profile/*|/nix/*|*:/nix/*) return 0 ;;
+  esac
+  [ "$purge_pkgs" = 1 ] && [ "$hm_only" = 0 ] && [ "$(uname -s)" != Darwin ] \
+    && [ "${sh_path##*/}" = zsh ] && return 0
+  return 1
+}
+
+# First shell from /etc/shells (then fixed fallbacks) that survives.
+safe_shell() {
+  for c in /bin/zsh /usr/bin/zsh /bin/bash /usr/bin/bash /bin/sh; do
+    [ -x "$c" ] || continue
+    shell_at_risk "$c" && continue
+    if [ -r /etc/shells ] && ! grep -qx "$c" /etc/shells; then continue; fi
+    printf '%s\n' "$c"
+    return 0
+  done
+  printf '/bin/sh\n'
+}
+
+current_shell=$(login_shell || true)
+if [ -n "$current_shell" ] && shell_at_risk "$current_shell"; then
+  new_shell=$(safe_shell)
+  warn "your login shell ($current_shell) is removed by this uninstall;"
+  warn "without a change, SSH logins to $USER will fail afterwards"
+  if ask "Change $USER's login shell to $new_shell first?"; then
+    if command -v chsh >/dev/null 2>&1; then
+      sudo chsh -s "$new_shell" "$USER"
+    else
+      sudo usermod -s "$new_shell" "$USER"
+    fi
+    [ "$(login_shell)" = "$new_shell" ] \
+      || { warn "login shell change did not apply; aborting before removing anything"; exit 1; }
+    log "login shell is now $new_shell"
+  else
+    warn "aborting: change the login shell first, e.g. sudo chsh -s $new_shell $USER"
+    exit 1
+  fi
+fi
+
 # ---------- step 1: home-manager uninstall -----------------------------------
 
 if command -v home-manager >/dev/null 2>&1; then

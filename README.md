@@ -250,12 +250,14 @@ exec zsh
 Make zsh your login shell if it isn't already:
 
 ```sh
-# Linux: pick whichever zsh is on PATH first; usually the Nix one wins.
-sudo chsh -s "$(command -v zsh)" "$USER"
+# Use the distro zsh from /etc/shells, never ~/.nix-profile/bin/zsh.
+sudo chsh -s "$(grep -m1 '/zsh$' /etc/shells)" "$USER"
 ```
 
-On Alpine you may need to first `sudo apk add zsh` so a system zsh exists
-in `/etc/shells`, or list `~/.nix-profile/bin/zsh` in `/etc/shells` by hand.
+Do not use the Nix zsh (`command -v zsh` usually resolves to it) as a login
+shell: `uninstall.sh` deletes it, and sshd then drops every login. install.sh
+already installs a distro zsh; on Alpine, `sudo apk add zsh` if it is
+missing. The HM-managed `~/.zshrc` works the same under either zsh.
 
 ### 6. First-launch nvim
 
@@ -541,6 +543,11 @@ alone unless you pass `--purge-pkgs`:
 ./uninstall.sh --hm-only      # only undo the user profile; leave Nix
 ./uninstall.sh --purge-pkgs   # also apk/apt-remove the bootstrap prereqs
 ```
+
+Before removing anything, the script checks the account's login shell. If
+uninstall would delete it (a Nix or HM-profile zsh, or the distro zsh with
+`--purge-pkgs`), it offers to switch to a surviving shell from `/etc/shells`,
+and aborts if you decline. Otherwise SSH logins fail afterwards.
 
 After the script finishes, the repo directory itself can be `rm -rf`'d
 and your secrets file at `~/.config/zsh/secrets.zsh` is offered for
